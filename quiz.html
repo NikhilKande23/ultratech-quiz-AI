@@ -762,8 +762,8 @@
             roundActive = true;
             timeLeft = 8 * 60; // 8 minutes
             startTimer();
-            // Remove waiting message and enable options
-            enableQuestionOptions();
+            // Re-display the question without waiting message
+            displayRound1Question();
         }
 
         function startRound2() {
@@ -827,18 +827,7 @@
             `;
         }
 
-        function enableQuestionOptions() {
-            const options = document.querySelectorAll('.option-btn');
-            options.forEach(option => {
-                option.classList.remove('disabled');
-            });
-            
-            // Remove waiting message
-            const waitingMsg = document.querySelector('.waiting-for-timer');
-            if (waitingMsg) {
-                waitingMsg.remove();
-            }
-        }
+
 
         function displayRound2Question() {
             if (currentQuestionIndex >= round2Questions.length) {
