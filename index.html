@@ -19,6 +19,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         .container {
@@ -26,15 +27,27 @@
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(15px);
             border-radius: 25px;
-            padding: 50px;
+            padding: 40px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.2);
-            max-width: 600px;
-            width: 90%;
+            max-width: 900px;
+            width: 100%;
+            animation: slideIn 0.8s ease;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
         }
 
         .logo {
-            background: #f1c40f;
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
             color: #2c3e50;
             padding: 20px 40px;
             border-radius: 15px;
@@ -42,6 +55,13 @@
             margin-bottom: 30px;
             font-weight: bold;
             font-size: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 5px 15px rgba(241,196,15,0.3); }
+            to { box-shadow: 0 5px 25px rgba(241,196,15,0.6); }
         }
 
         .logo-text {
@@ -56,42 +76,63 @@
         }
 
         h1 {
-            font-size: 3rem;
-            background: linear-gradient(45deg, #f1c40f, #fff);
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, #f1c40f, #fff, #f1c40f);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: textShine 3s infinite;
+        }
+
+        @keyframes textShine {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
         }
 
         .subtitle {
-            font-size: 1.3rem;
-            margin-bottom: 40px;
+            font-size: 1.4rem;
+            margin-bottom: 30px;
             opacity: 0.9;
+            color: #ecf0f1;
         }
 
-        .buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
+        .admin-section {
+            margin-bottom: 40px;
         }
 
         .btn {
             background: linear-gradient(45deg, #3498db, #2980b9);
             border: none;
-            padding: 20px 40px;
-            border-radius: 30px;
+            padding: 18px 35px;
+            border-radius: 25px;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             text-decoration: none;
             display: inline-block;
-            min-width: 250px;
+            min-width: 200px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
@@ -101,60 +142,199 @@
 
         .btn.admin {
             background: linear-gradient(45deg, #e74c3c, #c0392b);
+            font-size: 1.2rem;
+            padding: 20px 40px;
         }
 
-        .team-links {
-            margin-top: 30px;
-            padding: 20px;
+        .team-section {
+            margin-top: 40px;
+            padding: 30px;
             background: rgba(255,255,255,0.05);
-            border-radius: 15px;
+            border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.1);
+            animation: fadeInUp 1s ease 0.3s both;
         }
 
-        .team-links h3 {
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .team-section h3 {
             color: #f1c40f;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .team-description {
+            margin-bottom: 25px;
+            opacity: 0.9;
+            font-size: 1.1rem;
+            line-height: 1.5;
         }
 
         .team-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .team-link {
             background: rgba(255,255,255,0.1);
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 18px 20px;
+            border-radius: 12px;
             text-decoration: none;
             color: white;
             font-weight: bold;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.4s ease;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(241,196,15,0.1), rgba(52,152,219,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .team-link:hover::before {
+            opacity: 1;
         }
 
         .team-link:hover {
-            background: rgba(241,196,15,0.2);
+            background: rgba(241,196,15,0.15);
             border-color: #f1c40f;
-            transform: translateY(-2px);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(241,196,15,0.3);
+        }
+
+        .team-name {
+            font-size: 1.1rem;
+            color: #f1c40f;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .team-full-name {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            position: relative;
+            z-index: 1;
+        }
+
+        .quiz-info {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(52,152,219,0.15);
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+
+        .quiz-info h4 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .round-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .round-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .round-title {
+            font-weight: bold;
+            color: #f1c40f;
+            margin-bottom: 8px;
+        }
+
+        .round-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .footer {
+            margin-top: 40px;
+            opacity: 0.8;
+            font-size: 1rem;
+            animation: fadeInUp 1s ease 0.6s both;
+        }
+
+        .footer p {
+            margin: 8px 0;
+        }
+
+        .prize-info {
+            background: linear-gradient(45deg, rgba(241,196,15,0.2), rgba(230,126,34,0.2));
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 1px solid rgba(241,196,15,0.3);
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 30px 20px;
+                padding: 25px;
+                margin: 10px;
             }
             
             h1 {
-                font-size: 2rem;
-            }
-            
-            .btn {
-                min-width: 200px;
+                font-size: 2.5rem;
             }
             
             .team-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .team-link {
+                padding: 15px 12px;
+            }
+            
+            .round-info {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo-text {
+                font-size: 2rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
             }
         }
     </style>
@@ -167,36 +347,91 @@
         </div>
         
         <h1>🧠 GENIUS BATTLE 🧠</h1>
-        <p class="subtitle">Gen AI vs Gen BI - Quiz Challenge</p>
+        <p class="subtitle">Gen AI vs Gen BI - Ultimate Quiz Challenge</p>
         
-        <div class="buttons">
+        <div class="admin-section">
             <a href="admin.html" class="btn admin">
                 🏆 Admin Dashboard
             </a>
         </div>
-        
-        <div class="team-links">
-            <h3>🎯 Team Quiz Links</h3>
-            <p style="margin-bottom: 15px; opacity: 0.8;">
-                Click your team number to start the quiz:
-            </p>
-            <div class="team-grid">
-                <a href="quiz.html?team=1" class="team-link">Team 1</a>
-                <a href="quiz.html?team=2" class="team-link">Team 2</a>
-                <a href="quiz.html?team=3" class="team-link">Team 3</a>
-                <a href="quiz.html?team=4" class="team-link">Team 4</a>
-                <a href="quiz.html?team=5" class="team-link">Team 5</a>
-                <a href="quiz.html?team=6" class="team-link">Team 6</a>
-                <a href="quiz.html?team=7" class="team-link">Team 7</a>
-                <a href="quiz.html?team=8" class="team-link">Team 8</a>
-                <a href="quiz.html?team=9" class="team-link">Team 9</a>
-                <a href="quiz.html?team=10" class="team-link">Team 10</a>
+
+        <div class="quiz-info">
+            <h4>🎯 Quiz Structure</h4>
+            <div class="round-info">
+                <div class="round-card">
+                    <div class="round-title">🧠 Round 1</div>
+                    <div class="round-details">Fundamentals<br>15 Questions • 8 Minutes</div>
+                </div>
+                <div class="round-card">
+                    <div class="round-title">🎯 Round 2</div>
+                    <div class="round-details">Scenarios<br>10 Questions • 12 Minutes</div>
+                </div>
+                <div class="round-card">
+                    <div class="round-title">✏️ Round 3</div>
+                    <div class="round-details">Prompt Engineering<br>2 Tasks • 3 Minutes</div>
+                </div>
             </div>
         </div>
         
-        <div style="margin-top: 30px; opacity: 0.7; font-size: 0.9rem;">
-            <p>🍫 Win chocolates for your entire team!</p>
-            <p>Good luck in the GENIUS BATTLE!</p>
+        <div class="team-section">
+            <h3>🏆 Team Quiz Access</h3>
+            <div class="team-description">
+                <strong>Important:</strong> Each team link can only be used by one person at a time. 
+                Once opened, the link will be locked for other team members for 1 hour.
+            </div>
+            
+            <div class="team-grid">
+                <a href="quiz.html?team=1" class="team-link">
+                    <div class="team-name">Team MB</div>
+                    <div class="team-full-name">Mind Benders</div>
+                </a>
+                <a href="quiz.html?team=2" class="team-link">
+                    <div class="team-name">Team GB</div>
+                    <div class="team-full-name">Geek Battalion</div>
+                </a>
+                <a href="quiz.html?team=3" class="team-link">
+                    <div class="team-name">Team TB</div>
+                    <div class="team-full-name">Tech Brigade</div>
+                </a>
+                <a href="quiz.html?team=4" class="team-link">
+                    <div class="team-name">Team IP</div>
+                    <div class="team-full-name">Idea Pilots</div>
+                </a>
+                <a href="quiz.html?team=5" class="team-link">
+                    <div class="team-name">Team URL</div>
+                    <div class="team-full-name">Unique Result Leaders</div>
+                </a>
+                <a href="quiz.html?team=6" class="team-link">
+                    <div class="team-name">Team API</div>
+                    <div class="team-full-name">Access, Process, Innovate</div>
+                </a>
+                <a href="quiz.html?team=7" class="team-link">
+                    <div class="team-name">Team WAF</div>
+                    <div class="team-full-name">Wizards at Functionality</div>
+                </a>
+                <a href="quiz.html?team=8" class="team-link">
+                    <div class="team-name">Team PING</div>
+                    <div class="team-full-name">People in Next-Gen</div>
+                </a>
+                <a href="quiz.html?team=9" class="team-link">
+                    <div class="team-name">Team SSO</div>
+                    <div class="team-full-name">Smart Solution Only</div>
+                </a>
+                <a href="quiz.html?team=10" class="team-link">
+                    <div class="team-name">Team Cloud</div>
+                    <div class="team-full-name">Floating on Fun</div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="prize-info">
+                <p><strong>🍫 Prizes:</strong> Win chocolates for your entire team!</p>
+                <p><strong>📊 Format:</strong> Admin-controlled rounds with real-time scoring</p>
+            </div>
+            <p style="margin-top: 20px; opacity: 0.7;">
+                Good luck in the <strong>GENIUS BATTLE</strong>! 🚀
+            </p>
         </div>
     </div>
 </body>
