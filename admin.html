@@ -102,10 +102,44 @@
             background: linear-gradient(45deg, #f39c12, #e67e22);
         }
 
+        .control-btn.danger {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            font-size: 1.1rem;
+            padding: 15px 30px;
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 5px rgba(142,68,173,0.5); }
+            50% { box-shadow: 0 0 20px rgba(142,68,173,0.8); }
+        }
+
         .control-btn:disabled {
             background: #7f8c8d;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .game-reset-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(142,68,173,0.15);
+            border-radius: 15px;
+            border: 2px solid #8e44ad;
+        }
+
+        .game-reset-section h3 {
+            color: #8e44ad;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .warning-text {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            font-weight: bold;
         }
 
         .stats-overview {
@@ -428,6 +462,16 @@
             </div>
         </div>
 
+        <div class="game-reset-section">
+            <h3>🚨 Danger Zone</h3>
+            <div class="warning-text">
+                ⚠️ This will reset EVERYTHING: all scores, prompts, and game state!
+            </div>
+            <button class="control-btn danger" onclick="resetEntireGame()">
+                🔄 RESET ENTIRE GAME
+            </button>
+        </div>
+
         <div class="stats-overview">
             <div class="stat-card">
                 <div class="stat-number">10</div>
@@ -497,16 +541,16 @@
 
         // Team Data
         const teamData = {
-            1: {name: "Team MB", fullName: "Mind Benders", captain: ""},
-            2: {name: "Team GB", fullName: "Geek Battalion", captain: ""},
-            3: {name: "Team TB", fullName: "Tech Brigade", captain: ""},
-            4: {name: "Team IP", fullName: "Idea Pilots", captain: ""},
-            5: {name: "Team URL", fullName: "Unique Result Leaders", captain: ""},
-            6: {name: "Team API", fullName: "Access, Process, Innovate", captain: ""},
-            7: {name: "Team WAF", fullName: "Wizards at Functionality", captain: ""},
-            8: {name: "Team PING", fullName: "People in Next-Gen", captain: ""},
-            9: {name: "Team SSO", fullName: "Smart Solution Only", captain: ""},
-            10: {name: "Team Cloud", fullName: "Floating on Fun", captain: ""}
+            1: {name: "Team MB", fullName: "Mind Benders"},
+            2: {name: "Team GB", fullName: "Geek Battalion"},
+            3: {name: "Team TB", fullName: "Tech Brigade"},
+            4: {name: "Team IP", fullName: "Idea Pilots"},
+            5: {name: "Team URL", fullName: "Unique Result Leaders"},
+            6: {name: "Team API", fullName: "Access, Process, Innovate"},
+            7: {name: "Team WAF", fullName: "Wizards at Functionality"},
+            8: {name: "Team PING", fullName: "People in Next-Gen"},
+            9: {name: "Team SSO", fullName: "Smart Solution Only"},
+            10: {name: "Team Cloud", fullName: "Floating on Fun"}
         };
 
         let currentRound = 0;
@@ -579,16 +623,39 @@
                 // Reset all team scores for this round
                 for (let i = 1; i <= 10; i++) {
                     const teamRef = db.collection('teams').doc(i.toString());
-                    batch.update(teamRef, {
-                        [`rounds.round${round}.score`]: 0,
-                        [`rounds.round${round}.completed`]: false,
-                        [`rounds.round${round}.answers`]: [],
-                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    
+                    if (round === 1) {
+                        batch.update(teamRef, {
+                            'rounds.round1.score': 0,
+                            'rounds.round1.completed': false,
+                            'rounds.round1.answers': [],
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else if (round === 2) {
+                        batch.update(teamRef, {
+                            'rounds.round2.score': 0,
+                            'rounds.round2.completed': false,
+                            'rounds.round2.answers': [],
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else if (round === 3) {
+                        batch.update(teamRef, {
+                            'rounds.round3.manualScore': 0,
+                            'rounds.round3.completed': false,
+                            'rounds.round3.prompts': [],
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
                 }
                 
-                // If resetting round 3, also clear prompts
+                // If resetting round 3, also clear prompts collection
                 if (round === 3) {
+                    const promptsSnapshot = await db.collectionGroup('round3').get();
+                    promptsSnapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    // Also clear main prompts collection
                     for (let i = 1; i <= 10; i++) {
                         const promptRef = db.collection('prompts').doc(i.toString());
                         batch.delete(promptRef);
@@ -598,9 +665,90 @@
                 await batch.commit();
                 alert(`✅ Round ${round} has been reset successfully!`);
                 
+                // Refresh data
+                loadTeamData();
+                loadPrompts();
+                
             } catch (error) {
                 console.error('Error resetting round:', error);
                 alert('Error resetting round. Please try again.');
+            }
+        }
+
+        async function resetEntireGame() {
+            if (!confirm(`🚨 DANGER: Reset ENTIRE GAME? This will:\n\n✗ Delete ALL scores for ALL rounds\n✗ Clear ALL submitted prompts\n✗ Reset game state to beginning\n✗ Unlock all team sessions\n\nThis action CANNOT be undone!\n\nType "RESET" in the next prompt to confirm.`)) {
+                return;
+            }
+            
+            const confirmation = prompt('Type "RESET" to confirm complete game reset:');
+            if (confirmation !== 'RESET') {
+                alert('Game reset cancelled.');
+                return;
+            }
+
+            try {
+                const batch = db.batch();
+                
+                // Reset game state
+                const gameStateRef = db.collection('gameState').doc('current');
+                batch.set(gameStateRef, {
+                    currentRound: 0,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Reset all teams
+                for (let i = 1; i <= 10; i++) {
+                    const teamRef = db.collection('teams').doc(i.toString());
+                    batch.set(teamRef, {
+                        name: teamData[i].name,
+                        fullName: teamData[i].fullName,
+                        sessionLocked: false,
+                        rounds: {
+                            round1: { score: 0, completed: false, answers: [] },
+                            round2: { score: 0, completed: false, answers: [] },
+                            round3: { manualScore: 0, completed: false, prompts: [] }
+                        },
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                await batch.commit();
+                
+                // Clear all prompts in separate operation
+                try {
+                    const promptsSnapshot = await db.collectionGroup('round3').get();
+                    const promptBatch = db.batch();
+                    
+                    promptsSnapshot.forEach(doc => {
+                        promptBatch.delete(doc.ref);
+                    });
+                    
+                    // Also clear main prompts collection
+                    for (let i = 1; i <= 10; i++) {
+                        const promptRef = db.collection('prompts').doc(i.toString());
+                        promptBatch.delete(promptRef);
+                    }
+                    
+                    await promptBatch.commit();
+                } catch (promptError) {
+                    console.error('Error clearing prompts:', promptError);
+                }
+                
+                alert('🎮 ENTIRE GAME RESET SUCCESSFULLY!\n\n✅ All scores cleared\n✅ All prompts deleted\n✅ Game state reset\n✅ All sessions unlocked');
+                
+                // Reset local state
+                currentRound = 0;
+                teams = [];
+                prompts = [];
+                
+                // Refresh all data
+                updateRoundDisplay();
+                loadTeamData();
+                loadPrompts();
+                
+            } catch (error) {
+                console.error('Error resetting entire game:', error);
+                alert('❌ Error resetting game. Please try again or refresh the page.');
             }
         }
 
