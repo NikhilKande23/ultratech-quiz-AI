@@ -113,6 +113,11 @@
             animation: pulse 1s infinite;
         }
 
+        .timer-display.stopped {
+            color: #7f8c8d;
+            opacity: 0.6;
+        }
+
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -199,10 +204,16 @@
             justify-content: center;
         }
 
-        .option-btn:hover {
+        .option-btn:hover:not(.disabled) {
             background: rgba(255,255,255,0.2);
             border-color: #f1c40f;
             transform: translateY(-2px);
+        }
+
+        .option-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .option-btn.correct {
@@ -227,31 +238,6 @@
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
-        }
-
-        .next-btn {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 20px auto;
-            display: block;
-            transition: all 0.3s ease;
-        }
-
-        .next-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
-        .next-btn:disabled {
-            background: #7f8c8d;
-            cursor: not-allowed;
-            transform: none;
         }
 
         .waiting-screen {
@@ -317,6 +303,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
+        .submit-prompt-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .loading {
             text-align: center;
             font-size: 1.2rem;
@@ -357,6 +348,15 @@
             color: #e74c3c;
             margin-bottom: 20px;
         }
+
+        .waiting-for-timer {
+            text-align: center;
+            background: rgba(241,196,15,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #f1c40f;
+        }
     </style>
 </head>
 <body>
@@ -389,22 +389,18 @@
             appId: "1:846386736581:web:91446988c0fc8597f92fac"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         // Team Data
         const teamData = {
-            1: {name: "Team MB", fullName: "Mind Benders", captain: ""},
-            2: {name: "Team GB", fullName: "Geek Battalion", captain: ""},
-            3: {name: "Team TB", fullName: "Tech Brigade", captain: ""},
-            4: {name: "Team IP", fullName: "Idea Pilots", captain: ""},
-            5: {name: "Team URL", fullName: "Unique Result Leaders", captain: ""},
-            6: {name: "Team API", fullName: "Access, Process, Innovate", captain: ""},
-            7: {name: "Team WAF", fullName: "Wizards at Functionality", captain: ""},
-            8: {name: "Team PING", fullName: "People in Next-Gen", captain: ""},
-            9: {name: "Team SSO", fullName: "Smart Solution Only", captain: ""},
-            10: {name: "Team Cloud", fullName: "Floating on Fun", captain: ""}
+            1: {name: "Team MB", fullName: "Mind Benders"},
+            2: {name: "Team GB", fullName: "Geek Battalion"},
+            3: {name: "Team TB", fullName: "Tech Brigade"},
+            4: {name: "Team IP", fullName: "Idea Pilots"},
+            5: {name: "Team URL", fullName: "Unique Result Leaders"},
+            6: {name: "Team API", fullName: "Access, Process, Innovate"},
+            7: {name: "Team WAF", fullName: "Wizards at Functionality"},
+            8: {name: "Team PING", fullName: "People in Next-Gen"},
+            9: {name: "Team SSO", fullName: "Smart Solution Only"},
+            10: {name: "Team Cloud", fullName: "Floating on Fun"}
         };
 
         // Game state
@@ -415,6 +411,8 @@
         let timer = null;
         let timeLeft = 0;
         let currentPromptTask = 0;
+        let roundActive = false;
+        let db = null;
 
         // Question Banks
         const round1Questions = [
@@ -623,9 +621,29 @@
 
         // Initialize
         window.onload = function() {
-            getTeamFromURL();
-            initializeTeam();
+            initializeFirebase();
         };
+
+        async function initializeFirebase() {
+            try {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                // Test Firebase connection
+                await db.collection('gameState').doc('current').get();
+                updateConnectionStatus(true);
+                
+                // Get team from URL and initialize
+                getTeamFromURL();
+                await initializeTeam();
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                updateConnectionStatus(false);
+                showError('Firebase connection failed. Please check your internet connection and try again.');
+            }
+        }
 
         function getTeamFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -637,18 +655,25 @@
             }
             
             const team = teamData[teamId];
+            if (!team) {
+                showError('Team not found! Please use a valid team link.');
+                return;
+            }
+            
             document.getElementById('teamInfo').textContent = `${team.name} - ${team.fullName}`;
         }
 
         async function initializeTeam() {
+            if (!teamId || !db) return;
+            
             try {
                 // Check if session is already locked
                 const teamDoc = await db.collection('teams').doc(teamId).get();
-                const teamData = teamDoc.data();
+                const existingTeamData = teamDoc.data();
                 
-                if (teamData && teamData.sessionLocked) {
+                if (existingTeamData && existingTeamData.sessionLocked) {
                     const now = new Date().getTime();
-                    const lockTime = teamData.sessionTimeout ? teamData.sessionTimeout.toMillis() : 0;
+                    const lockTime = existingTeamData.sessionTimeout ? existingTeamData.sessionTimeout.toMillis() : 0;
                     
                     if (now < lockTime) {
                         showSessionExpired();
@@ -657,9 +682,10 @@
                 }
                 
                 // Lock the session
+                const team = teamData[teamId];
                 await db.collection('teams').doc(teamId).set({
-                    name: teamData[teamId].name,
-                    fullName: teamData[teamId].fullName,
+                    name: team.name,
+                    fullName: team.fullName,
                     sessionLocked: true,
                     sessionTimeout: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
                     rounds: {
@@ -670,52 +696,91 @@
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 
+                // Start listening for game state
                 listenForGameState();
-                updateConnectionStatus(true);
+                
+                // Show first question immediately
+                displayFirstQuestion();
+                
             } catch (error) {
                 console.error('Error initializing team:', error);
                 updateConnectionStatus(false);
+                showError('Failed to initialize team session. Please try again.');
             }
         }
 
         function listenForGameState() {
+            if (!db) return;
+            
             db.collection('gameState').doc('current').onSnapshot((doc) => {
                 if (doc.exists) {
                     const gameData = doc.data();
-                    currentRound = gameData.currentRound || 0;
-                    updateGameDisplay();
+                    const newRound = gameData.currentRound || 0;
+                    
+                    if (newRound !== currentRound) {
+                        currentRound = newRound;
+                        updateGameDisplay();
+                    }
                 }
+            }, (error) => {
+                console.error('Error listening to game state:', error);
+                updateConnectionStatus(false);
             });
         }
 
+        function displayFirstQuestion() {
+            // Show Round 1 Question 1 but don't start timer
+            currentRound = 1;
+            currentQuestionIndex = 0;
+            currentScore = 0;
+            roundActive = false;
+            displayRound1Question();
+        }
+
         function updateGameDisplay() {
-            const container = document.getElementById('quizContainer');
-            
             if (currentRound === 0) {
-                container.innerHTML = `
-                    <div class="waiting-screen">
-                        <h2>🎯 Waiting for Game to Start</h2>
-                        <p>Please wait for the admin to start Round 1</p>
-                        <div class="loading">🔄 Standby...</div>
-                    </div>
-                `;
+                displayFirstQuestion(); // Still show first question
             } else if (currentRound === 1) {
-                startRound1();
+                if (!roundActive) {
+                    startRound1Timer();
+                }
             } else if (currentRound === 2) {
-                startRound2();
+                if (!roundActive) {
+                    startRound2();
+                }
             } else if (currentRound === 3) {
-                startRound3();
-            } else if (currentRound === 4) {
-                showFinalResults();
+                if (!roundActive) {
+                    startRound3();
+                }
+            } else if (currentRound >= 11 && currentRound <= 13) {
+                // Round ended
+                handleRoundEnd();
             }
         }
 
-        function startRound1() {
-            currentQuestionIndex = 0;
-            currentScore = 0;
+        function startRound1Timer() {
+            roundActive = true;
             timeLeft = 8 * 60; // 8 minutes
             startTimer();
-            displayRound1Question();
+            // Remove waiting message and enable options
+            enableQuestionOptions();
+        }
+
+        function startRound2() {
+            roundActive = true;
+            currentQuestionIndex = 0;
+            currentScore = 0;
+            timeLeft = 12 * 60; // 12 minutes
+            startTimer();
+            displayRound2Question();
+        }
+
+        function startRound3() {
+            roundActive = true;
+            currentPromptTask = 0;
+            timeLeft = 3 * 60; // 3 minutes
+            startTimer();
+            displayPromptTask();
         }
 
         function displayRound1Question() {
@@ -728,17 +793,27 @@
             const container = document.getElementById('quizContainer');
             
             const optionsHTML = question.options.map((option, index) => 
-                `<button class="option-btn" onclick="selectAnswer(${index}, 1)">${option}</button>`
+                `<button class="option-btn ${!roundActive ? 'disabled' : ''}" onclick="selectAnswer(${index}, 1)">${option}</button>`
             ).join('');
+
+            const waitingMessage = !roundActive ? `
+                <div class="waiting-for-timer">
+                    ⏳ <strong>Waiting for admin to start Round 1 timer...</strong><br>
+                    You can see the questions but cannot answer until the timer starts!
+                </div>
+            ` : '';
 
             container.innerHTML = `
                 <div class="round-indicator">🧠 Round 1: Fundamentals (${currentQuestionIndex + 1}/15)</div>
+                ${waitingMessage}
                 <div class="quiz-header">
                     <div class="question-info">
                         <div class="question-counter">Question ${currentQuestionIndex + 1} of 15</div>
                         <div class="score-display">Score: ${currentScore} points</div>
                     </div>
-                    <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
+                    <div class="timer-display ${!roundActive ? 'stopped' : ''}" id="timerDisplay">
+                        ${!roundActive ? 'Waiting...' : formatTime(timeLeft)}
+                    </div>
                 </div>
                 <div class="question-card">
                     <div class="question-difficulty difficulty-${question.difficulty}">
@@ -752,12 +827,17 @@
             `;
         }
 
-        function startRound2() {
-            currentQuestionIndex = 0;
-            currentScore = 0;
-            timeLeft = 12 * 60; // 12 minutes
-            startTimer();
-            displayRound2Question();
+        function enableQuestionOptions() {
+            const options = document.querySelectorAll('.option-btn');
+            options.forEach(option => {
+                option.classList.remove('disabled');
+            });
+            
+            // Remove waiting message
+            const waitingMsg = document.querySelector('.waiting-for-timer');
+            if (waitingMsg) {
+                waitingMsg.remove();
+            }
         }
 
         function displayRound2Question() {
@@ -796,13 +876,6 @@
             `;
         }
 
-        function startRound3() {
-            currentPromptTask = 0;
-            timeLeft = 3 * 60; // 3 minutes
-            startTimer();
-            displayPromptTask();
-        }
-
         function displayPromptTask() {
             if (currentPromptTask >= promptTasks.length) {
                 completeRound3();
@@ -837,12 +910,17 @@
                     </div>
                     <strong>✅ Write a Better Prompt:</strong>
                     <textarea class="prompt-input" id="promptInput" placeholder="Write your improved prompt here..."></textarea>
-                    <button class="submit-prompt-btn" onclick="submitPrompt()">Submit Prompt</button>
+                    <button class="submit-prompt-btn" onclick="submitPrompt()" ${!roundActive ? 'disabled' : ''}>Submit Prompt</button>
                 </div>
             `;
         }
 
         function selectAnswer(selectedIndex, round) {
+            if (!roundActive) {
+                alert('Please wait for the admin to start the round timer!');
+                return;
+            }
+            
             const questions = round === 1 ? round1Questions : round2Questions;
             const question = questions[currentQuestionIndex];
             const options = document.querySelectorAll('.option-btn');
@@ -859,7 +937,6 @@
                 updateScore();
             } else {
                 selectedOption.classList.add('wrong');
-                // Don't show correct answers as requested
             }
             
             // Auto-advance after 2 seconds
@@ -874,6 +951,11 @@
         }
 
         async function submitPrompt() {
+            if (!roundActive) {
+                alert('Please wait for the admin to start Round 3!');
+                return;
+            }
+            
             const promptText = document.getElementById('promptInput').value.trim();
             if (!promptText) {
                 alert('Please write a prompt before submitting!');
@@ -881,6 +963,10 @@
             }
 
             try {
+                const submitBtn = document.querySelector('.submit-prompt-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+                
                 // Save prompt to database
                 await db.collection('prompts').doc(teamId).collection('round3').doc(`task${currentPromptTask + 1}`).set({
                     taskTitle: promptTasks[currentPromptTask].title,
@@ -895,6 +981,9 @@
             } catch (error) {
                 console.error('Error submitting prompt:', error);
                 alert('Error submitting prompt. Please try again.');
+                const submitBtn = document.querySelector('.submit-prompt-btn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Prompt';
             }
         }
 
@@ -940,6 +1029,8 @@
         }
 
         function showRoundComplete(round, score) {
+            roundActive = false;
+            clearInterval(timer);
             const container = document.getElementById('quizContainer');
             container.innerHTML = `
                 <div class="completion-screen">
@@ -951,18 +1042,17 @@
             `;
         }
 
-        function showFinalResults() {
-            const container = document.getElementById('quizContainer');
-            container.innerHTML = `
-                <div class="completion-screen">
-                    <h2>🏆 GENIUS BATTLE Complete! 🏆</h2>
-                    <p>All rounds completed successfully!</p>
-                    <p>Check with the admin for final results and prizes!</p>
-                    <p style="margin-top: 20px; font-size: 1.2rem;">
-                        🍫 Thanks for participating, ${teamData[teamId].name}!
-                    </p>
-                </div>
-            `;
+        function handleRoundEnd() {
+            roundActive = false;
+            clearInterval(timer);
+            
+            if (currentRound === 11) { // Round 1 ended
+                completeRound1();
+            } else if (currentRound === 12) { // Round 2 ended
+                completeRound2();
+            } else if (currentRound === 13) { // Round 3 ended
+                completeRound3();
+            }
         }
 
         function startTimer() {
@@ -972,7 +1062,8 @@
                 updateTimerDisplay();
                 
                 if (timeLeft <= 60) {
-                    document.getElementById('timerDisplay').classList.add('warning');
+                    const display = document.getElementById('timerDisplay');
+                    if (display) display.classList.add('warning');
                 }
                 
                 if (timeLeft <= 0) {
@@ -994,7 +1085,7 @@
 
         function updateTimerDisplay() {
             const display = document.getElementById('timerDisplay');
-            if (display) {
+            if (display && roundActive) {
                 display.textContent = formatTime(timeLeft);
             }
         }
@@ -1032,6 +1123,9 @@
                 <div class="session-expired">
                     <h2>❌ Error</h2>
                     <p>${message}</p>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Retry
+                    </button>
                 </div>
             `;
         }
@@ -1049,13 +1143,15 @@
 
         // Clean up session on page unload
         window.addEventListener('beforeunload', async () => {
-            try {
-                await db.collection('teams').doc(teamId).update({
-                    sessionLocked: false,
-                    sessionTimeout: firebase.firestore.FieldValue.delete()
-                });
-            } catch (error) {
-                console.log('Error cleaning up session:', error);
+            if (db && teamId) {
+                try {
+                    await db.collection('teams').doc(teamId).update({
+                        sessionLocked: false,
+                        sessionTimeout: firebase.firestore.FieldValue.delete()
+                    });
+                } catch (error) {
+                    console.log('Error cleaning up session:', error);
+                }
             }
         });
     </script>
