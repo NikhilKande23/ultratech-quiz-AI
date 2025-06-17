@@ -62,6 +62,16 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
+        .round-indicator {
+            text-align: center;
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            padding: 15px 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
         .quiz-header {
             display: flex;
             justify-content: space-between;
@@ -114,6 +124,19 @@
             padding: 25px;
             margin: 20px 0;
             border-left: 5px solid #f1c40f;
+            transition: all 0.5s ease;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(50px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
         }
 
         .question-difficulty {
@@ -131,13 +154,8 @@
             color: white;
         }
 
-        .difficulty-medium {
-            background: #f39c12;
-            color: white;
-        }
-
-        .difficulty-complex {
-            background: #e74c3c;
+        .difficulty-scenario {
+            background: #3498db;
             color: white;
         }
 
@@ -146,6 +164,15 @@
             margin-bottom: 20px;
             line-height: 1.6;
             text-align: center;
+        }
+
+        .scenario-text {
+            background: rgba(52, 152, 219, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            font-style: italic;
         }
 
         .options-grid {
@@ -162,7 +189,7 @@
             border-radius: 12px;
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             font-size: 1rem;
             font-weight: 500;
             text-align: center;
@@ -227,6 +254,14 @@
             transform: none;
         }
 
+        .waiting-screen {
+            text-align: center;
+            padding: 60px 40px;
+            background: rgba(52,152,219,0.2);
+            border-radius: 20px;
+            border: 2px solid #3498db;
+        }
+
         .completion-screen {
             text-align: center;
             padding: 40px;
@@ -240,6 +275,46 @@
             color: #f1c40f;
             font-weight: bold;
             margin: 20px 0;
+        }
+
+        .prompt-input {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(255,255,255,0.1);
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 15px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            margin: 15px 0;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: #f1c40f;
+            box-shadow: 0 0 15px rgba(241,196,15,0.3);
+        }
+
+        .prompt-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .submit-prompt-btn {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-prompt-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         .loading {
@@ -257,6 +332,7 @@
             border-radius: 10px;
             font-weight: bold;
             font-size: 0.9rem;
+            z-index: 1000;
         }
 
         .connected {
@@ -267,6 +343,19 @@
         .disconnected {
             background: #e74c3c;
             color: white;
+        }
+
+        .session-expired {
+            text-align: center;
+            padding: 60px 40px;
+            background: rgba(231,76,60,0.2);
+            border-radius: 20px;
+            border: 2px solid #e74c3c;
+        }
+
+        .session-expired h2 {
+            color: #e74c3c;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -280,22 +369,8 @@
             <p>UltraTech Quiz Challenge</p>
         </header>
 
-        <div class="quiz-container">
-            <div class="quiz-header">
-                <div class="question-info">
-                    <div class="question-counter" id="questionCounter">Question 1 of 10</div>
-                    <div class="score-display" id="scoreDisplay">Score: 0 points</div>
-                </div>
-                <div class="timer-display" id="timerDisplay">1:00</div>
-            </div>
-            
-            <div id="questionDisplay">
-                <div class="loading">🔄 Loading questions...</div>
-            </div>
-            
-            <button class="next-btn" onclick="nextQuestion()" id="nextBtn" disabled style="display: none;">
-                ➡️ Next Question
-            </button>
+        <div class="quiz-container" id="quizContainer">
+            <div class="loading">🔄 Loading quiz system...</div>
         </div>
     </div>
 
@@ -318,85 +393,231 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // Team Data
+        const teamData = {
+            1: {name: "Team MB", fullName: "Mind Benders", captain: ""},
+            2: {name: "Team GB", fullName: "Geek Battalion", captain: ""},
+            3: {name: "Team TB", fullName: "Tech Brigade", captain: ""},
+            4: {name: "Team IP", fullName: "Idea Pilots", captain: ""},
+            5: {name: "Team URL", fullName: "Unique Result Leaders", captain: ""},
+            6: {name: "Team API", fullName: "Access, Process, Innovate", captain: ""},
+            7: {name: "Team WAF", fullName: "Wizards at Functionality", captain: ""},
+            8: {name: "Team PING", fullName: "People in Next-Gen", captain: ""},
+            9: {name: "Team SSO", fullName: "Smart Solution Only", captain: ""},
+            10: {name: "Team Cloud", fullName: "Floating on Fun", captain: ""}
+        };
+
         // Game state
         let teamId = null;
-        let teamName = '';
+        let currentRound = 0;
         let currentQuestionIndex = 0;
-        let score = 0;
+        let currentScore = 0;
         let timer = null;
-        let timeLeft = 60;
+        let timeLeft = 0;
+        let currentPromptTask = 0;
 
-        // Question Bank
-        const questionBank = [
+        // Question Banks
+        const round1Questions = [
             {
-                question: "What does AI stand for?",
-                options: ["Artificial Intelligence", "Automated Information", "Advanced Integration", "Applied Innovation", "Analytical Insights", "Algorithmic Interface"],
-                correct: [0],
+                question: "What is the main purpose of Generative AI?",
+                options: ["Storing large datasets", "Creating structured databases", "Running data backups", "Generating new content such as text, images, or audio", "Encrypting network traffic", "Hosting APIs"],
+                correct: [3],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "Which company created ChatGPT?",
-                options: ["Google", "Microsoft", "OpenAI", "Amazon", "Meta", "Apple"],
+                question: "Which technology powers most generative AI models today?",
+                options: ["CNN", "RPA", "Decision Trees", "Transformer-based architectures", "JSON APIs", "SQL Engines"],
+                correct: [3],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "What does the term 'prompt' refer to in Gen AI?",
+                options: ["A scheduled job", "A BI dashboard", "Input text used to guide AI output", "Error logs", "KPI file", "SQL connection string"],
                 correct: [2],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "What is the most common data format for AI processing?",
-                options: ["PDF", "Text/CSV", "Video", "Audio", "Images", "PowerPoint"],
+                question: "Which of these tasks can be automated using Gen AI?",
+                options: ["ERP configurations", "Text summarization", "Server provisioning", "Log rotation", "Internet routing", "Network segmentation"],
                 correct: [1],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "Which tool is commonly used for creating business dashboards?",
-                options: ["Notepad", "Paint", "Power BI", "Calculator", "Word", "Excel"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "What does BI stand for in business context?",
-                options: ["Basic Information", "Business Intelligence", "Binary Integration", "Behavioral Insights", "Budget Implementation", "Brand Identity"],
+                question: "What does 'fine-tuning' a Gen AI model involve?",
+                options: ["Making it smaller", "Training it on domain-specific data", "Changing the font size", "Refreshing output", "Restarting memory", "Compressing model weights"],
                 correct: [1],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "In cement manufacturing, which AI application would be most valuable for quality control?",
-                options: ["Music generation", "Pattern recognition", "Social media analysis", "Game development", "Video editing", "Recipe creation"],
+                question: "How does a Gen AI system improve its response accuracy?",
+                options: ["Manual updates by admins", "Learning from user feedback and corrections", "Retraining from scratch each time", "Adding more hardware", "Increasing prompt length", "Reducing tokens"],
                 correct: [1],
-                difficulty: "medium",
-                points: 5
+                difficulty: "simple",
+                points: 3
             },
             {
-                question: "What is the primary benefit of using Natural Language Processing in business applications?",
-                options: ["Faster internet", "Better graphics", "Understanding human language", "Improved hardware", "Reduced costs", "Enhanced security"],
+                question: "In enterprise document automation, Gen AI can:",
+                options: ["Export PowerPoints", "Schedule HR interviews", "Draft policy documents using learned tone and structure", "Track inventory levels", "Send calendar invites", "Calculate depreciation"],
                 correct: [2],
-                difficulty: "medium",
-                points: 5
+                difficulty: "simple",
+                points: 3
             },
             {
-                question: "Which Microsoft tool allows you to interact with your data using natural language?",
-                options: ["Paint", "Notepad", "Copilot", "Calculator", "PowerPoint", "Word"],
+                question: "Which prompt will likely yield the best result for summarizing a 10-page legal document?",
+                options: ["Summarize", "Do it fast", "Show me contents", "Summarize this legal document into 5 key bullet points", "TL;DR", "Explain simply"],
+                correct: [3],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Which function is least aligned with Generative AI?",
+                options: ["Creating code snippets", "Drafting emails", "Running real-time analytics", "Generating designs", "Brainstorming ideas", "Text translation"],
                 correct: [2],
-                difficulty: "medium",
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "A major risk of using Generative AI in sensitive environments is:",
+                options: ["Faster runtime", "Higher resolution", "Hallucination (generating false facts)", "Lower token count", "Excessive memory", "Cleaner syntax"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "In a customer service chatbot built using Gen AI, what must be added to ensure safety in responses?",
+                options: ["VPN firewall", "Scheduled prompts", "SQL logging", "Moderation layer and fallback rules", "Syntax converter", "Time filter"],
+                correct: [3],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "What makes a Gen AI pipeline enterprise-ready?",
+                options: ["Single-token prompting", "No-code UI", "Data governance + prompt validation + audit logs", "GPU overclocking", "Slack notifications", "Simple LLM wrapper"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Which issue can arise when prompts are not specific in Gen AI applications?",
+                options: ["Model loading failure", "Irrelevant or misleading outputs", "Browser error", "Token overflow", "Port conflict", "DNS error"],
+                correct: [1],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Which architectural element improves output quality in a multi-agent Gen AI system?",
+                options: ["CDN cache", "Static routing", "Role-based agent orchestration", "Hardcoded syntax", "Plain prompts", "File export triggers"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "In legal or finance domains, how do organizations minimize AI-generated hallucinations?",
+                options: ["Give bigger prompts", "Use more RAM", "Add retrieval-augmented generation (RAG) with real documents", "Disable temperature", "Mask outputs", "Tokenize manually"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            }
+        ];
+
+        const round2Questions = [
+            {
+                question: "A plant supervisor wants an AI system to identify the top 3 causes of frequent breakdowns in a kiln over the past 6 months and automatically recommend actions. Which capability must the AI system include to fulfill this task effectively?",
+                scenario: "Agentic Decision Flow",
+                options: ["Rule-based alerting", "Scheduled data exports", "Static BI dashboards", "Multimodal reasoning & tool-usage", "Database replication", "Email distribution workflow"],
+                correct: [3],
+                difficulty: "scenario",
                 points: 5
             },
             {
-                question: "For UltraTech's cement production optimization, which AI capabilities would be most effective? (Select 2 correct answers)",
-                options: ["Predictive maintenance for equipment", "Social media content generation", "Demand forecasting for production planning", "Video game development", "Music composition", "Graphic design"],
-                correct: [0, 2],
-                difficulty: "complex",
-                points: 7
+                question: "A commercial officer types 'Show me the YoY cement dispatch trend for Gujarat zone' into a dashboard assistant. Which technology stack supports this workflow?",
+                scenario: "Natural Language to Insights",
+                options: ["SQL Views + Excel", "OCR + Chatbot", "Gen BI with NL-to-SQL + Visualization Layer", "SAP Export + Email Report", "Predictive Maintenance Bot", "PowerPoint Integration"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
             },
             {
-                question: "In implementing BI solutions for UltraTech's operations, which data sources would provide the most valuable insights? (Select 2 correct answers)",
-                options: ["Production efficiency metrics", "Employee social media posts", "Quality control measurements", "Office cafeteria menus", "Parking lot usage", "Weather patterns"],
-                correct: [0, 2],
-                difficulty: "complex",
-                points: 7
+                question: "A Generative BI assistant receives a vague query: 'Why are margins lower this month?' What is the most Agentic AI-like next step?",
+                scenario: "Agentic Response Loop",
+                options: ["Send a report link", "Ask for timeframe and business unit for clarity", "Display top 10 margin lines", "Ping the finance team", "Highlight total revenue", "Recommend a dashboard"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "An AI agent analyzes dispatch issues, checks weather patterns, finds consistent rainfall in one region, and suggests increasing lead time buffers. What best describes this process?",
+                scenario: "Cognitive Loop",
+                options: ["Data visualization", "Agentic AI with contextual planning", "KPI Commentary", "Notification system", "Excel trend line", "Static Reporting"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "In an enterprise workflow, one Gen AI agent prepares the demand forecast, while another validates it against last year's trends. What is this an example of?",
+                scenario: "Multi-Agent Collaboration",
+                options: ["Role-based BI", "Multi-agent orchestration", "RPA", "ML hyperparameter tuning", "KPI automation", "Chatbot interface"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "A team writes this prompt: 'Make me a dashboard for dispatch.' What's the main issue?",
+                scenario: "Prompt Engineering",
+                options: ["It's too long", "It's not SQL compatible", "It's missing specificity and context", "It's grammatically wrong", "It's anti-pattern", "Needs API key"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "After a failed dashboard generation attempt, the AI revises the SQL query automatically and retries. Which Agentic AI principle does this demonstrate?",
+                scenario: "Feedback-Driven Improvement",
+                options: ["Prompt chaining", "Reasoning & retry loop", "PDF parsing", "Human feedback loop", "Web scraping", "Linear regression"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "Over time, your Gen BI assistant starts giving more accurate commentary summaries for monthly MIS reports based on analyst feedback. Which feature is at play?",
+                scenario: "Self-Improving Workflows",
+                options: ["Hardcoded rules", "Offline training", "Human-in-the-loop reinforcement", "Batch data merge", "UI refresh rate", "KPI hierarchy"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "A plant manager asks, 'Why did Unit 2 consume more power than Unit 1 last week?' Which is the most Gen BI-driven response path?",
+                scenario: "Root Cause Tracing",
+                options: ["Emailing the last MIS report", "Opening SAP power log", "Auto-querying past data and visualizing daily consumption with annotations", "Asking maintenance team", "Exporting raw CSV", "Showing a bar chart of units"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                question: "The assistant automatically generates this insight: 'Sales dropped 5% QoQ due to higher returns in East Zone and delayed dispatches from Chittorgarh plant.' This is an example of:",
+                scenario: "KPI Commentary Automation",
+                options: ["KPI aggregation", "Data storytelling", "Automated Gen BI commentary", "Static content generation", "Dashboard embedding", "ChatGPT plugin"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            }
+        ];
+
+        const promptTasks = [
+            {
+                title: "Production Report Generation",
+                brokenPrompt: "Make me a report for production stuff",
+                description: "Write a clear prompt to generate a comprehensive daily production report for cement plant managers"
+            },
+            {
+                title: "Customer Service AI Assistant",
+                brokenPrompt: "Help customer with problems",
+                description: "Write a clear prompt for an AI assistant to handle customer service inquiries professionally"
             }
         ];
 
@@ -404,7 +625,6 @@
         window.onload = function() {
             getTeamFromURL();
             initializeTeam();
-            updateConnectionStatus(true);
         };
 
         function getTeamFromURL() {
@@ -412,50 +632,116 @@
             teamId = urlParams.get('team');
             
             if (!teamId || teamId < 1 || teamId > 10) {
-                alert('Invalid team ID! Please use a valid team link.');
+                showError('Invalid team ID! Please use a valid team link.');
                 return;
             }
             
-            teamName = `Team ${teamId}`;
-            document.getElementById('teamInfo').textContent = teamName;
+            const team = teamData[teamId];
+            document.getElementById('teamInfo').textContent = `${team.name} - ${team.fullName}`;
         }
 
         async function initializeTeam() {
             try {
-                // Create or get team document
+                // Check if session is already locked
+                const teamDoc = await db.collection('teams').doc(teamId).get();
+                const teamData = teamDoc.data();
+                
+                if (teamData && teamData.sessionLocked) {
+                    const now = new Date().getTime();
+                    const lockTime = teamData.sessionTimeout ? teamData.sessionTimeout.toMillis() : 0;
+                    
+                    if (now < lockTime) {
+                        showSessionExpired();
+                        return;
+                    }
+                }
+                
+                // Lock the session
                 await db.collection('teams').doc(teamId).set({
-                    name: teamName,
-                    score: 0,
-                    currentQuestion: 0,
-                    completed: false,
+                    name: teamData[teamId].name,
+                    fullName: teamData[teamId].fullName,
+                    sessionLocked: true,
+                    sessionTimeout: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+                    rounds: {
+                        round1: { score: 0, completed: false, answers: [] },
+                        round2: { score: 0, completed: false, answers: [] },
+                        round3: { prompts: [], manualScore: 0, completed: false }
+                    },
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 
-                displayQuestion();
-                startTimer();
+                listenForGameState();
+                updateConnectionStatus(true);
             } catch (error) {
                 console.error('Error initializing team:', error);
                 updateConnectionStatus(false);
             }
         }
 
-        function displayQuestion() {
-            if (currentQuestionIndex >= questionBank.length) {
-                showCompletionScreen();
+        function listenForGameState() {
+            db.collection('gameState').doc('current').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const gameData = doc.data();
+                    currentRound = gameData.currentRound || 0;
+                    updateGameDisplay();
+                }
+            });
+        }
+
+        function updateGameDisplay() {
+            const container = document.getElementById('quizContainer');
+            
+            if (currentRound === 0) {
+                container.innerHTML = `
+                    <div class="waiting-screen">
+                        <h2>🎯 Waiting for Game to Start</h2>
+                        <p>Please wait for the admin to start Round 1</p>
+                        <div class="loading">🔄 Standby...</div>
+                    </div>
+                `;
+            } else if (currentRound === 1) {
+                startRound1();
+            } else if (currentRound === 2) {
+                startRound2();
+            } else if (currentRound === 3) {
+                startRound3();
+            } else if (currentRound === 4) {
+                showFinalResults();
+            }
+        }
+
+        function startRound1() {
+            currentQuestionIndex = 0;
+            currentScore = 0;
+            timeLeft = 8 * 60; // 8 minutes
+            startTimer();
+            displayRound1Question();
+        }
+
+        function displayRound1Question() {
+            if (currentQuestionIndex >= round1Questions.length) {
+                completeRound1();
                 return;
             }
 
-            const question = questionBank[currentQuestionIndex];
-            const questionDisplay = document.getElementById('questionDisplay');
+            const question = round1Questions[currentQuestionIndex];
+            const container = document.getElementById('quizContainer');
             
-            const difficultyClass = `difficulty-${question.difficulty}`;
             const optionsHTML = question.options.map((option, index) => 
-                `<button class="option-btn" onclick="selectAnswer(${index})">${option}</button>`
+                `<button class="option-btn" onclick="selectAnswer(${index}, 1)">${option}</button>`
             ).join('');
 
-            questionDisplay.innerHTML = `
+            container.innerHTML = `
+                <div class="round-indicator">🧠 Round 1: Fundamentals (${currentQuestionIndex + 1}/15)</div>
+                <div class="quiz-header">
+                    <div class="question-info">
+                        <div class="question-counter">Question ${currentQuestionIndex + 1} of 15</div>
+                        <div class="score-display">Score: ${currentScore} points</div>
+                    </div>
+                    <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
+                </div>
                 <div class="question-card">
-                    <div class="question-difficulty ${difficultyClass}">
+                    <div class="question-difficulty difficulty-${question.difficulty}">
                         ${question.difficulty.toUpperCase()} - ${question.points} points
                     </div>
                     <div class="question-text">${question.question}</div>
@@ -464,13 +750,101 @@
                     </div>
                 </div>
             `;
-
-            document.getElementById('questionCounter').textContent = `Question ${currentQuestionIndex + 1} of ${questionBank.length}`;
-            document.getElementById('nextBtn').style.display = 'none';
         }
 
-        function selectAnswer(selectedIndex) {
-            const question = questionBank[currentQuestionIndex];
+        function startRound2() {
+            currentQuestionIndex = 0;
+            currentScore = 0;
+            timeLeft = 12 * 60; // 12 minutes
+            startTimer();
+            displayRound2Question();
+        }
+
+        function displayRound2Question() {
+            if (currentQuestionIndex >= round2Questions.length) {
+                completeRound2();
+                return;
+            }
+
+            const question = round2Questions[currentQuestionIndex];
+            const container = document.getElementById('quizContainer');
+            
+            const optionsHTML = question.options.map((option, index) => 
+                `<button class="option-btn" onclick="selectAnswer(${index}, 2)">${option}</button>`
+            ).join('');
+
+            container.innerHTML = `
+                <div class="round-indicator">🎯 Round 2: Scenarios (${currentQuestionIndex + 1}/10)</div>
+                <div class="quiz-header">
+                    <div class="question-info">
+                        <div class="question-counter">Question ${currentQuestionIndex + 1} of 10</div>
+                        <div class="score-display">Score: ${currentScore} points</div>
+                    </div>
+                    <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
+                </div>
+                <div class="question-card">
+                    <div class="question-difficulty difficulty-${question.difficulty}">
+                        SCENARIO - ${question.points} points
+                    </div>
+                    <div class="scenario-text">
+                        <strong>${question.scenario}:</strong> ${question.question}
+                    </div>
+                    <div class="options-grid">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function startRound3() {
+            currentPromptTask = 0;
+            timeLeft = 3 * 60; // 3 minutes
+            startTimer();
+            displayPromptTask();
+        }
+
+        function displayPromptTask() {
+            if (currentPromptTask >= promptTasks.length) {
+                completeRound3();
+                return;
+            }
+
+            const task = promptTasks[currentPromptTask];
+            const container = document.getElementById('quizContainer');
+
+            container.innerHTML = `
+                <div class="round-indicator">✏️ Round 3: Prompt Engineering (${currentPromptTask + 1}/2)</div>
+                <div class="quiz-header">
+                    <div class="question-info">
+                        <div class="question-counter">Task ${currentPromptTask + 1} of 2</div>
+                        <div class="score-display">Manual Scoring by Admin</div>
+                    </div>
+                    <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
+                </div>
+                <div class="question-card">
+                    <div class="question-difficulty" style="background: #9b59b6;">
+                        PROMPT TASK
+                    </div>
+                    <div class="question-text">
+                        <strong>${task.title}</strong><br>
+                        ${task.description}
+                    </div>
+                    <div style="margin: 20px 0;">
+                        <strong>❌ Broken Prompt:</strong>
+                        <div style="background: rgba(231,76,60,0.2); padding: 15px; border-radius: 8px; margin: 10px 0; font-style: italic; border-left: 4px solid #e74c3c;">
+                            "${task.brokenPrompt}"
+                        </div>
+                    </div>
+                    <strong>✅ Write a Better Prompt:</strong>
+                    <textarea class="prompt-input" id="promptInput" placeholder="Write your improved prompt here..."></textarea>
+                    <button class="submit-prompt-btn" onclick="submitPrompt()">Submit Prompt</button>
+                </div>
+            `;
+        }
+
+        function selectAnswer(selectedIndex, round) {
+            const questions = round === 1 ? round1Questions : round2Questions;
+            const question = questions[currentQuestionIndex];
             const options = document.querySelectorAll('.option-btn');
             
             // Disable all options
@@ -481,115 +855,185 @@
             
             if (isCorrect) {
                 selectedOption.classList.add('correct');
-                score += question.points;
-                updateScoreDisplay();
+                currentScore += question.points;
+                updateScore();
             } else {
                 selectedOption.classList.add('wrong');
-                // Show correct answers
-                question.correct.forEach(correctIndex => {
-                    options[correctIndex].classList.add('correct');
-                });
+                // Don't show correct answers as requested
             }
             
-            clearInterval(timer);
-            document.getElementById('nextBtn').style.display = 'block';
-            document.getElementById('nextBtn').disabled = false;
-            
-            // Update Firebase
-            updateTeamProgress();
+            // Auto-advance after 2 seconds
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (round === 1) {
+                    displayRound1Question();
+                } else {
+                    displayRound2Question();
+                }
+            }, 2000);
         }
 
-        function nextQuestion() {
-            currentQuestionIndex++;
-            displayQuestion();
-            resetTimer();
-            startTimer();
+        async function submitPrompt() {
+            const promptText = document.getElementById('promptInput').value.trim();
+            if (!promptText) {
+                alert('Please write a prompt before submitting!');
+                return;
+            }
+
+            try {
+                // Save prompt to database
+                await db.collection('prompts').doc(teamId).collection('round3').doc(`task${currentPromptTask + 1}`).set({
+                    taskTitle: promptTasks[currentPromptTask].title,
+                    brokenPrompt: promptTasks[currentPromptTask].brokenPrompt,
+                    improvedPrompt: promptText,
+                    submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    teamName: teamData[teamId].name
+                });
+
+                currentPromptTask++;
+                displayPromptTask();
+            } catch (error) {
+                console.error('Error submitting prompt:', error);
+                alert('Error submitting prompt. Please try again.');
+            }
+        }
+
+        async function completeRound1() {
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    'rounds.round1.score': currentScore,
+                    'rounds.round1.completed': true,
+                    'rounds.round1.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showRoundComplete(1, currentScore);
+            } catch (error) {
+                console.error('Error completing round 1:', error);
+            }
+        }
+
+        async function completeRound2() {
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    'rounds.round2.score': currentScore,
+                    'rounds.round2.completed': true,
+                    'rounds.round2.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showRoundComplete(2, currentScore);
+            } catch (error) {
+                console.error('Error completing round 2:', error);
+            }
+        }
+
+        async function completeRound3() {
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    'rounds.round3.completed': true,
+                    'rounds.round3.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showRoundComplete(3, 'Submitted');
+            } catch (error) {
+                console.error('Error completing round 3:', error);
+            }
+        }
+
+        function showRoundComplete(round, score) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="completion-screen">
+                    <h2>🎉 Round ${round} Complete! 🎉</h2>
+                    <div class="final-score">${score}${typeof score === 'number' ? ' points' : ''}</div>
+                    <p>Great job, ${teamData[teamId].name}!</p>
+                    <p>Waiting for the next round to begin...</p>
+                </div>
+            `;
+        }
+
+        function showFinalResults() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="completion-screen">
+                    <h2>🏆 GENIUS BATTLE Complete! 🏆</h2>
+                    <p>All rounds completed successfully!</p>
+                    <p>Check with the admin for final results and prizes!</p>
+                    <p style="margin-top: 20px; font-size: 1.2rem;">
+                        🍫 Thanks for participating, ${teamData[teamId].name}!
+                    </p>
+                </div>
+            `;
         }
 
         function startTimer() {
-            timeLeft = 60;
-            updateTimerDisplay();
-            
+            clearInterval(timer);
             timer = setInterval(() => {
                 timeLeft--;
                 updateTimerDisplay();
                 
-                if (timeLeft <= 15) {
+                if (timeLeft <= 60) {
                     document.getElementById('timerDisplay').classList.add('warning');
                 }
                 
                 if (timeLeft <= 0) {
                     clearInterval(timer);
-                    // Auto move to next question
-                    document.getElementById('nextBtn').style.display = 'block';
-                    document.getElementById('nextBtn').disabled = false;
-                    
-                    // Disable all options
-                    document.querySelectorAll('.option-btn').forEach(btn => {
-                        btn.style.pointerEvents = 'none';
-                        btn.style.opacity = '0.6';
-                    });
+                    handleTimeUp();
                 }
             }, 1000);
         }
 
-        function resetTimer() {
-            clearInterval(timer);
-            document.getElementById('timerDisplay').classList.remove('warning');
-            document.getElementById('nextBtn').disabled = true;
+        function handleTimeUp() {
+            if (currentRound === 1) {
+                completeRound1();
+            } else if (currentRound === 2) {
+                completeRound2();
+            } else if (currentRound === 3) {
+                completeRound3();
+            }
         }
 
         function updateTimerDisplay() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            document.getElementById('timerDisplay').textContent = 
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function updateScoreDisplay() {
-            document.getElementById('scoreDisplay').textContent = `Score: ${score} points`;
-        }
-
-        async function updateTeamProgress() {
-            try {
-                await db.collection('teams').doc(teamId).update({
-                    score: score,
-                    currentQuestion: currentQuestionIndex,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Error updating progress:', error);
-                updateConnectionStatus(false);
+            const display = document.getElementById('timerDisplay');
+            if (display) {
+                display.textContent = formatTime(timeLeft);
             }
         }
 
-        async function showCompletionScreen() {
-            try {
-                // Mark as completed
-                await db.collection('teams').doc(teamId).update({
-                    completed: true,
-                    finalScore: score,
-                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                
-                document.getElementById('questionDisplay').innerHTML = `
-                    <div class="completion-screen">
-                        <h2>🎉 Quiz Completed! 🎉</h2>
-                        <div class="final-score">${score} points</div>
-                        <p>Great job, ${teamName}!</p>
-                        <p>Your score has been submitted to the admin dashboard.</p>
-                        <p style="margin-top: 20px; font-size: 1.1rem;">
-                            🍫 Check with the quiz master for your results!
-                        </p>
-                    </div>
-                `;
-                
-                updateConnectionStatus(true);
-            } catch (error) {
-                console.error('Error completing quiz:', error);
-                updateConnectionStatus(false);
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateScore() {
+            const scoreDisplay = document.querySelector('.score-display');
+            if (scoreDisplay) {
+                scoreDisplay.textContent = `Score: ${currentScore} points`;
             }
+        }
+
+        function showSessionExpired() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="session-expired">
+                    <h2>🔒 Session Locked</h2>
+                    <p>This team link is currently being used by another team member.</p>
+                    <p>Please wait for them to finish or contact your team captain.</p>
+                    <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">
+                        Sessions automatically unlock after 1 hour of inactivity.
+                    </p>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="session-expired">
+                    <h2>❌ Error</h2>
+                    <p>${message}</p>
+                </div>
+            `;
         }
 
         function updateConnectionStatus(connected) {
@@ -602,6 +1046,18 @@
                 statusElement.className = 'connection-status disconnected';
             }
         }
+
+        // Clean up session on page unload
+        window.addEventListener('beforeunload', async () => {
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    sessionLocked: false,
+                    sessionTimeout: firebase.firestore.FieldValue.delete()
+                });
+            } catch (error) {
+                console.log('Error cleaning up session:', error);
+            }
+        });
     </script>
 </body>
 </html>
