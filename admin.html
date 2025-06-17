@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraTech GENIUS BATTLE - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #f1c40f, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #f1c40f;
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #f1c40f;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .team-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border-left: 5px solid #f1c40f;
+            transition: all 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .team-card.completed {
+            border-left-color: #27ae60;
+            background: rgba(39,174,96,0.1);
+        }
+
+        .team-card.in-progress {
+            border-left-color: #f39c12;
+            background: rgba(243,156,18,0.1);
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .team-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f1c40f;
+        }
+
+        .team-status {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .status-completed {
+            background: #27ae60;
+            color: white;
+        }
+
+        .status-in-progress {
+            background: #f39c12;
+            color: white;
+        }
+
+        .status-not-started {
+            background: #7f8c8d;
+            color: white;
+        }
+
+        .team-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .score-high {
+            color: #27ae60;
+        }
+
+        .score-medium {
+            color: #f39c12;
+        }
+
+        .score-low {
+            color: #e74c3c;
+        }
+
+        .team-progress {
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .team-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        .leaderboard {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+            margin-bottom: 30px;
+        }
+
+        .leaderboard h2 {
+            text-align: center;
+            font-size: 2rem;
+            color: #f1c40f;
+            margin-bottom: 25px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            font-weight: bold;
+            width: 40px;
+            text-align: center;
+        }
+
+        .rank.first {
+            color: #f1c40f;
+        }
+
+        .rank.second {
+            color: #bdc3c7;
+        }
+
+        .rank.third {
+            color: #cd7f32;
+        }
+
+        .team-info {
+            flex: 1;
+            margin-left: 20px;
+        }
+
+        .leaderboard-score {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #f1c40f;
+        }
+
+        .refresh-status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(39,174,96,0.2);
+            border-radius: 10px;
+            border: 1px solid #27ae60;
+        }
+
+        .connection-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .connected {
+            background: #27ae60;
+            color: white;
+        }
+
+        .disconnected {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #f1c40f;
+            margin: 40px 0;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .teams-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-indicator" id="connectionIndicator">🔄 Connecting...</div>
+    
+    <div class="container">
+        <header class="header">
+            <h1>🏆 Admin Dashboard</h1>
+            <p>UltraTech GENIUS BATTLE - Real-time Team Monitoring</p>
+        </header>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-number" id="totalTeams">0</div>
+                <div class="stat-label">Total Teams</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="completedTeams">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeTeams">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgScore">0</div>
+                <div class="stat-label">Avg Score</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn" onclick="refreshData()">🔄 Refresh Now</button>
+            <button class="control-btn" onclick="exportScores()">📊 Export Scores</button>
+            <button class="control-btn danger" onclick="resetAllScores()">⚠️ Reset All</button>
+        </div>
+
+        <div class="refresh-status" id="refreshStatus">
+            ✅ Auto-refreshing every 30 seconds | Last update: Never
+        </div>
+
+        <div class="leaderboard">
+            <h2>🏆 Live Leaderboard</h2>
+            <div id="leaderboardList">
+                <div class="loading">Loading leaderboard...</div>
+            </div>
+        </div>
+
+        <div class="teams-grid" id="teamsGrid">
+            <div class="loading">Loading team data...</div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXA54F8OQvEo5RZzokUIBFT5pOUlQk-TQ",
+            authDomain: "ultratech-quiz-ai.firebaseapp.com",
+            projectId: "ultratech-quiz-ai",
+            storageBucket: "ultratech-quiz-ai.firebasestorage.app",
+            messagingSenderId: "846386736581",
+            appId: "1:846386736581:web:91446988c0fc8597f92fac"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let teams = [];
+        let refreshInterval;
+
+        // Initialize
+        window.onload = function() {
+            loadTeamData();
+            startAutoRefresh();
+            updateConnectionStatus(true);
+        };
+
+        async function loadTeamData() {
+            try {
+                const snapshot = await db.collection('teams').orderBy('score', 'desc').get();
+                teams = [];
+                
+                snapshot.forEach(doc => {
+                    teams.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateDashboard();
+                updateConnectionStatus(true);
+                updateRefreshStatus();
+            } catch (error) {
+                console.error('Error loading team data:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateDashboard() {
+            updateStatistics();
+            updateLeaderboard();
+            updateTeamsGrid();
+        }
+
+        function updateStatistics() {
+            const totalTeams = teams.length;
+            const completedTeams = teams.filter(team => team.completed).length;
+            const activeTeams = teams.filter(team => !team.completed && team.currentQuestion > 0).length;
+            const avgScore = totalTeams > 0 ? Math.round(teams.reduce((sum, team) => sum + (team.score || 0), 0) / totalTeams) : 0;
+
+            document.getElementById('totalTeams').textContent = totalTeams;
+            document.getElementById('completedTeams').textContent = completedTeams;
+            document.getElementById('activeTeams').textContent = activeTeams;
+            document.getElementById('avgScore').textContent = avgScore;
+        }
+
+        function updateLeaderboard() {
+            const sortedTeams = [...teams].sort((a, b) => (b.score || 0) - (a.score || 0));
+            const leaderboardList = document.getElementById('leaderboardList');
+            
+            if (sortedTeams.length === 0) {
+                leaderboardList.innerHTML = '<div class="loading">No teams found</div>';
+                return;
+            }
+
+            const leaderboardHTML = sortedTeams.slice(0, 10).map((team, index) => {
+                const rank = index + 1;
+                let rankClass = '';
+                if (rank === 1) rankClass = 'first';
+                else if (rank === 2) rankClass = 'second';
+                else if (rank === 3) rankClass = 'third';
+
+                return `
+                    <div class="leaderboard-item">
+                        <div class="rank ${rankClass}">#${rank}</div>
+                        <div class="team-info">
+                            <div class="team-name">${team.name || `Team ${team.id}`}</div>
+                            <div class="team-details">
+                                ${team.completed ? '✅ Completed' : `📝 Question ${team.currentQuestion || 0}/10`}
+                            </div>
+                        </div>
+                        <div class="leaderboard-score">${team.score || 0}</div>
+                    </div>
+                `;
+            }).join('');
+
+            leaderboardList.innerHTML = leaderboardHTML;
+        }
+
+        function updateTeamsGrid() {
+            const teamsGrid = document.getElementById('teamsGrid');
+            
+            if (teams.length === 0) {
+                teamsGrid.innerHTML = '<div class="loading">No teams found</div>';
+                return;
+            }
+
+            const teamsHTML = teams.map(team => {
+                const score = team.score || 0;
+                const currentQuestion = team.currentQuestion || 0;
+                const progress = (currentQuestion / 10) * 100;
+                
+                let scoreClass = 'score-low';
+                if (score >= 30) scoreClass = 'score-high';
+                else if (score >= 15) scoreClass = 'score-medium';
+                
+                let status = 'Not Started';
+                let statusClass = 'status-not-started';
+                let cardClass = '';
+                
+                if (team.completed) {
+                    status = 'Completed';
+                    statusClass = 'status-completed';
+                    cardClass = 'completed';
+                } else if (currentQuestion > 0) {
+                    status = 'In Progress';
+                    statusClass = 'status-in-progress';
+                    cardClass = 'in-progress';
+                }
+
+                const lastUpdated = team.lastUpdated ? 
+                    new Date(team.lastUpdated.toDate()).toLocaleTimeString() : 'Never';
+
+                return `
+                    <div class="team-card ${cardClass}">
+                        <div class="team-header">
+                            <div class="team-name">${team.name || `Team ${team.id}`}</div>
+                            <div class="team-status ${statusClass}">${status}</div>
+                        </div>
+                        <div class="team-score ${scoreClass}">${score} points</div>
+                        <div class="team-progress">
+                            <div class="progress-bar" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="team-details">
+                            <div>Question: ${currentQuestion}/10</div>
+                            <div>Last update: ${lastUpdated}</div>
+                            ${team.completed ? `<div>Completed at: ${team.completedAt ? new Date(team.completedAt.toDate()).toLocaleTimeString() : 'Unknown'}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            teamsGrid.innerHTML = teamsHTML;
+        }
+
+        function refreshData() {
+            loadTeamData();
+        }
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                loadTeamData();
+            }, 30000); // Refresh every 30 seconds
+        }
+
+        function updateRefreshStatus() {
+            const now = new Date().toLocaleTimeString();
+            document.getElementById('refreshStatus').innerHTML = 
+                `✅ Auto-refreshing every 30 seconds | Last update: ${now}`;
+        }
+
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('connectionIndicator');
+            if (connected) {
+                indicator.textContent = '✅ Connected';
+                indicator.className = 'connection-indicator connected';
+            } else {
+                indicator.textContent = '❌ Connection Error';
+                indicator.className = 'connection-indicator disconnected';
+            }
+        }
+
+        function exportScores() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Team,Score,Status,Current Question,Last Updated\n"
+                + teams.map(team => {
+                    const status = team.completed ? 'Completed' : (team.currentQuestion > 0 ? 'In Progress' : 'Not Started');
+                    const lastUpdated = team.lastUpdated ? new Date(team.lastUpdated.toDate()).toLocaleString() : 'Never';
+                    return `${team.name || `Team ${team.id}`},${team.score || 0},${status},${team.currentQuestion || 0},"${lastUpdated}"`;
+                }).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ultratech_quiz_scores_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function resetAllScores() {
+            if (!confirm('⚠️ Are you sure you want to reset ALL team scores? This action cannot be undone!')) {
+                return;
+            }
+
+            try {
+                const batch = db.batch();
+                teams.forEach(team => {
+                    const teamRef = db.collection('teams').doc(team.id);
+                    batch.update(teamRef, {
+                        score: 0,
+                        currentQuestion: 0,
+                        completed: false,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                });
+                
+                await batch.commit();
+                alert('✅ All scores have been reset successfully!');
+                loadTeamData();
+            } catch (error) {
+                console.error('Error resetting scores:', error);
+                alert('❌ Error resetting scores. Please try again.');
+            }
+        }
+
+        // Listen for real-time updates
+        db.collection('teams').onSnapshot((snapshot) => {
+            loadTeamData();
+        }, (error) => {
+            console.error('Real-time listener error:', error);
+            updateConnectionStatus(false);
+        });
+    </script>
+</body>
+</html>

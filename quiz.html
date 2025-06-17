@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraTech GENIUS BATTLE - Team Quiz</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #95a5a6 100%);
+            min-height: 100vh;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            background: rgba(0,0,0,0.1);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .team-info {
+            background: linear-gradient(45deg, #f1c40f, #f39c12);
+            color: #2c3e50;
+            padding: 15px 30px;
+            border-radius: 15px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #f1c40f, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .quiz-container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .question-info {
+            text-align: center;
+        }
+
+        .question-counter {
+            font-size: 1.4rem;
+            color: #f1c40f;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .score-display {
+            font-size: 1.2rem;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .timer-display {
+            font-size: 2.5rem;
+            color: #f1c40f;
+            font-weight: bold;
+            background: rgba(0,0,0,0.3);
+            padding: 15px 25px;
+            border-radius: 15px;
+        }
+
+        .timer-display.warning {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .question-card {
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #f1c40f;
+        }
+
+        .question-difficulty {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .difficulty-simple {
+            background: #27ae60;
+            color: white;
+        }
+
+        .difficulty-medium {
+            background: #f39c12;
+            color: white;
+        }
+
+        .difficulty-complex {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-btn {
+            background: rgba(255,255,255,0.1);
+            border: 3px solid rgba(255,255,255,0.3);
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: #f1c40f;
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct {
+            background: #27ae60;
+            border-color: #2ecc71;
+            animation: celebrate 1s ease;
+        }
+
+        .option-btn.wrong {
+            background: #e74c3c;
+            border-color: #c0392b;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.05) rotate(-2deg); }
+            75% { transform: scale(1.05) rotate(2deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .next-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .next-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .completion-screen {
+            text-align: center;
+            padding: 40px;
+            background: rgba(39,174,96,0.2);
+            border-radius: 20px;
+            border: 2px solid #27ae60;
+        }
+
+        .final-score {
+            font-size: 3rem;
+            color: #f1c40f;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #f1c40f;
+            margin: 20px 0;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .connected {
+            background: #27ae60;
+            color: white;
+        }
+
+        .disconnected {
+            background: #e74c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">🔄 Connecting...</div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="team-info" id="teamInfo">Loading Team...</div>
+            <h1>🧠 GENIUS BATTLE 🧠</h1>
+            <p>UltraTech Quiz Challenge</p>
+        </header>
+
+        <div class="quiz-container">
+            <div class="quiz-header">
+                <div class="question-info">
+                    <div class="question-counter" id="questionCounter">Question 1 of 10</div>
+                    <div class="score-display" id="scoreDisplay">Score: 0 points</div>
+                </div>
+                <div class="timer-display" id="timerDisplay">1:00</div>
+            </div>
+            
+            <div id="questionDisplay">
+                <div class="loading">🔄 Loading questions...</div>
+            </div>
+            
+            <button class="next-btn" onclick="nextQuestion()" id="nextBtn" disabled style="display: none;">
+                ➡️ Next Question
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXA54F8OQvEo5RZzokUIBFT5pOUlQk-TQ",
+            authDomain: "ultratech-quiz-ai.firebaseapp.com",
+            projectId: "ultratech-quiz-ai",
+            storageBucket: "ultratech-quiz-ai.firebasestorage.app",
+            messagingSenderId: "846386736581",
+            appId: "1:846386736581:web:91446988c0fc8597f92fac"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Game state
+        let teamId = null;
+        let teamName = '';
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer = null;
+        let timeLeft = 60;
+
+        // Question Bank
+        const questionBank = [
+            {
+                question: "What does AI stand for?",
+                options: ["Artificial Intelligence", "Automated Information", "Advanced Integration", "Applied Innovation", "Analytical Insights", "Algorithmic Interface"],
+                correct: [0],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Which company created ChatGPT?",
+                options: ["Google", "Microsoft", "OpenAI", "Amazon", "Meta", "Apple"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "What is the most common data format for AI processing?",
+                options: ["PDF", "Text/CSV", "Video", "Audio", "Images", "PowerPoint"],
+                correct: [1],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Which tool is commonly used for creating business dashboards?",
+                options: ["Notepad", "Paint", "Power BI", "Calculator", "Word", "Excel"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "What does BI stand for in business context?",
+                options: ["Basic Information", "Business Intelligence", "Binary Integration", "Behavioral Insights", "Budget Implementation", "Brand Identity"],
+                correct: [1],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "In cement manufacturing, which AI application would be most valuable for quality control?",
+                options: ["Music generation", "Pattern recognition", "Social media analysis", "Game development", "Video editing", "Recipe creation"],
+                correct: [1],
+                difficulty: "medium",
+                points: 5
+            },
+            {
+                question: "What is the primary benefit of using Natural Language Processing in business applications?",
+                options: ["Faster internet", "Better graphics", "Understanding human language", "Improved hardware", "Reduced costs", "Enhanced security"],
+                correct: [2],
+                difficulty: "medium",
+                points: 5
+            },
+            {
+                question: "Which Microsoft tool allows you to interact with your data using natural language?",
+                options: ["Paint", "Notepad", "Copilot", "Calculator", "PowerPoint", "Word"],
+                correct: [2],
+                difficulty: "medium",
+                points: 5
+            },
+            {
+                question: "For UltraTech's cement production optimization, which AI capabilities would be most effective? (Select 2 correct answers)",
+                options: ["Predictive maintenance for equipment", "Social media content generation", "Demand forecasting for production planning", "Video game development", "Music composition", "Graphic design"],
+                correct: [0, 2],
+                difficulty: "complex",
+                points: 7
+            },
+            {
+                question: "In implementing BI solutions for UltraTech's operations, which data sources would provide the most valuable insights? (Select 2 correct answers)",
+                options: ["Production efficiency metrics", "Employee social media posts", "Quality control measurements", "Office cafeteria menus", "Parking lot usage", "Weather patterns"],
+                correct: [0, 2],
+                difficulty: "complex",
+                points: 7
+            }
+        ];
+
+        // Initialize
+        window.onload = function() {
+            getTeamFromURL();
+            initializeTeam();
+            updateConnectionStatus(true);
+        };
+
+        function getTeamFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            teamId = urlParams.get('team');
+            
+            if (!teamId || teamId < 1 || teamId > 10) {
+                alert('Invalid team ID! Please use a valid team link.');
+                return;
+            }
+            
+            teamName = `Team ${teamId}`;
+            document.getElementById('teamInfo').textContent = teamName;
+        }
+
+        async function initializeTeam() {
+            try {
+                // Create or get team document
+                await db.collection('teams').doc(teamId).set({
+                    name: teamName,
+                    score: 0,
+                    currentQuestion: 0,
+                    completed: false,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                displayQuestion();
+                startTimer();
+            } catch (error) {
+                console.error('Error initializing team:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= questionBank.length) {
+                showCompletionScreen();
+                return;
+            }
+
+            const question = questionBank[currentQuestionIndex];
+            const questionDisplay = document.getElementById('questionDisplay');
+            
+            const difficultyClass = `difficulty-${question.difficulty}`;
+            const optionsHTML = question.options.map((option, index) => 
+                `<button class="option-btn" onclick="selectAnswer(${index})">${option}</button>`
+            ).join('');
+
+            questionDisplay.innerHTML = `
+                <div class="question-card">
+                    <div class="question-difficulty ${difficultyClass}">
+                        ${question.difficulty.toUpperCase()} - ${question.points} points
+                    </div>
+                    <div class="question-text">${question.question}</div>
+                    <div class="options-grid">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('questionCounter').textContent = `Question ${currentQuestionIndex + 1} of ${questionBank.length}`;
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+
+        function selectAnswer(selectedIndex) {
+            const question = questionBank[currentQuestionIndex];
+            const options = document.querySelectorAll('.option-btn');
+            
+            // Disable all options
+            options.forEach(btn => btn.style.pointerEvents = 'none');
+            
+            const isCorrect = question.correct.includes(selectedIndex);
+            const selectedOption = options[selectedIndex];
+            
+            if (isCorrect) {
+                selectedOption.classList.add('correct');
+                score += question.points;
+                updateScoreDisplay();
+            } else {
+                selectedOption.classList.add('wrong');
+                // Show correct answers
+                question.correct.forEach(correctIndex => {
+                    options[correctIndex].classList.add('correct');
+                });
+            }
+            
+            clearInterval(timer);
+            document.getElementById('nextBtn').style.display = 'block';
+            document.getElementById('nextBtn').disabled = false;
+            
+            // Update Firebase
+            updateTeamProgress();
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            displayQuestion();
+            resetTimer();
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 60;
+            updateTimerDisplay();
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 15) {
+                    document.getElementById('timerDisplay').classList.add('warning');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    // Auto move to next question
+                    document.getElementById('nextBtn').style.display = 'block';
+                    document.getElementById('nextBtn').disabled = false;
+                    
+                    // Disable all options
+                    document.querySelectorAll('.option-btn').forEach(btn => {
+                        btn.style.pointerEvents = 'none';
+                        btn.style.opacity = '0.6';
+                    });
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            document.getElementById('timerDisplay').classList.remove('warning');
+            document.getElementById('nextBtn').disabled = true;
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timerDisplay').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('scoreDisplay').textContent = `Score: ${score} points`;
+        }
+
+        async function updateTeamProgress() {
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    score: score,
+                    currentQuestion: currentQuestionIndex,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Error updating progress:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        async function showCompletionScreen() {
+            try {
+                // Mark as completed
+                await db.collection('teams').doc(teamId).update({
+                    completed: true,
+                    finalScore: score,
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                document.getElementById('questionDisplay').innerHTML = `
+                    <div class="completion-screen">
+                        <h2>🎉 Quiz Completed! 🎉</h2>
+                        <div class="final-score">${score} points</div>
+                        <p>Great job, ${teamName}!</p>
+                        <p>Your score has been submitted to the admin dashboard.</p>
+                        <p style="margin-top: 20px; font-size: 1.1rem;">
+                            🍫 Check with the quiz master for your results!
+                        </p>
+                    </div>
+                `;
+                
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Error completing quiz:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusElement = document.getElementById('connectionStatus');
+            if (connected) {
+                statusElement.textContent = '✅ Connected';
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '❌ Connection Error';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+    </script>
+</body>
+</html>

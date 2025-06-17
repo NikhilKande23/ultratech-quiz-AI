@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraTech GENIUS BATTLE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #95a5a6 100%);
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 50px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .logo {
+            background: #f1c40f;
+            color: #2c3e50;
+            padding: 20px 40px;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 30px;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .logo-subtext {
+            font-size: 1rem;
+            letter-spacing: 0.2em;
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #f1c40f, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 250px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .btn.admin {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .team-links {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .team-links h3 {
+            color: #f1c40f;
+            margin-bottom: 15px;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .team-link {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .team-link:hover {
+            background: rgba(241,196,15,0.2);
+            border-color: #f1c40f;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                min-width: 200px;
+            }
+            
+            .team-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-text">UltraTech</div>
+            <div class="logo-subtext">CEMENT</div>
+        </div>
+        
+        <h1>🧠 GENIUS BATTLE 🧠</h1>
+        <p class="subtitle">Gen AI vs Gen BI - Quiz Challenge</p>
+        
+        <div class="buttons">
+            <a href="admin.html" class="btn admin">
+                🏆 Admin Dashboard
+            </a>
+        </div>
+        
+        <div class="team-links">
+            <h3>🎯 Team Quiz Links</h3>
+            <p style="margin-bottom: 15px; opacity: 0.8;">
+                Click your team number to start the quiz:
+            </p>
+            <div class="team-grid">
+                <a href="quiz.html?team=1" class="team-link">Team 1</a>
+                <a href="quiz.html?team=2" class="team-link">Team 2</a>
+                <a href="quiz.html?team=3" class="team-link">Team 3</a>
+                <a href="quiz.html?team=4" class="team-link">Team 4</a>
+                <a href="quiz.html?team=5" class="team-link">Team 5</a>
+                <a href="quiz.html?team=6" class="team-link">Team 6</a>
+                <a href="quiz.html?team=7" class="team-link">Team 7</a>
+                <a href="quiz.html?team=8" class="team-link">Team 8</a>
+                <a href="quiz.html?team=9" class="team-link">Team 9</a>
+                <a href="quiz.html?team=10" class="team-link">Team 10</a>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; opacity: 0.7; font-size: 0.9rem;">
+            <p>🍫 Win chocolates for your entire team!</p>
+            <p>Good luck in the GENIUS BATTLE!</p>
+        </div>
+    </div>
+</body>
+</html>
