@@ -729,11 +729,11 @@
         }
 
         function displayFirstQuestion() {
-            // Show Round 1 Question 1 but don't start timer
-            currentRound = 1;
+            // Show Round 1 Question 1 but keep currentRound = 0 until admin starts
             currentQuestionIndex = 0;
             currentScore = 0;
             roundActive = false;
+            // DON'T set currentRound = 1 here - keep it 0 until admin starts
             displayRound1Question();
         }
 
@@ -792,11 +792,14 @@
             const question = round1Questions[currentQuestionIndex];
             const container = document.getElementById('quizContainer');
             
+            // Check if we're in waiting mode (currentRound = 0) or active mode (currentRound = 1 and roundActive = true)
+            const isWaiting = (currentRound === 0 || !roundActive);
+            
             const optionsHTML = question.options.map((option, index) => 
-                `<button class="option-btn ${!roundActive ? 'disabled' : ''}" onclick="selectAnswer(${index}, 1)">${option}</button>`
+                `<button class="option-btn ${isWaiting ? 'disabled' : ''}" onclick="selectAnswer(${index}, 1)">${option}</button>`
             ).join('');
 
-            const waitingMessage = !roundActive ? `
+            const waitingMessage = isWaiting ? `
                 <div class="waiting-for-timer">
                     ⏳ <strong>Waiting for admin to start Round 1 timer...</strong><br>
                     You can see the questions but cannot answer until the timer starts!
@@ -811,8 +814,8 @@
                         <div class="question-counter">Question ${currentQuestionIndex + 1} of 15</div>
                         <div class="score-display">Score: ${currentScore} points</div>
                     </div>
-                    <div class="timer-display ${!roundActive ? 'stopped' : ''}" id="timerDisplay">
-                        ${!roundActive ? 'Waiting...' : formatTime(timeLeft)}
+                    <div class="timer-display ${isWaiting ? 'stopped' : ''}" id="timerDisplay">
+                        ${isWaiting ? 'Waiting...' : formatTime(timeLeft)}
                     </div>
                 </div>
                 <div class="question-card">
