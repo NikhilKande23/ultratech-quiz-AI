@@ -1130,19 +1130,62 @@
             }
         }
 
-        // Clean up session on page unload
+        // Enhanced cleanup with better error handling
         window.addEventListener('beforeunload', async () => {
+            await cleanupSession();
+        });
+
+        window.addEventListener('unload', async () => {
+            await cleanupSession();
+        });
+
+        // Also cleanup on page visibility change (when tab becomes hidden)
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'hidden') {
+                await cleanupSession();
+            }
+        });
+
+        async function cleanupSession() {
             if (db && teamId) {
                 try {
+                    // Unsubscribe from listeners
+                    if (window.gameStateUnsubscribe) {
+                        window.gameStateUnsubscribe();
+                    }
+                    
+                    // Unlock session
                     await db.collection('teams').doc(teamId).update({
                         sessionLocked: false,
-                        sessionTimeout: firebase.firestore.FieldValue.delete()
+                        sessionTimeout: firebase.firestore.FieldValue.delete(),
+                        lastActivity: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    
+                    console.log('Session cleaned up successfully');
                 } catch (error) {
                     console.log('Error cleaning up session:', error);
                 }
             }
-        });
+        }
+
+        // Add debugging function
+        function showDebugInfo() {
+            const debugInfo = {
+                teamId,
+                currentRound,
+                roundActive,
+                timeLeft,
+                currentQuestionIndex,
+                currentScore,
+                connectionStatus: document.getElementById('connectionStatus').textContent
+            };
+            
+            console.log('Debug Info:', debugInfo);
+            return debugInfo;
+        }
+
+        // Expose debug function globally
+        window.showDebugInfo = showDebugInfo;
     </script>
 </body>
 </html>
