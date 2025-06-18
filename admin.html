@@ -434,12 +434,6 @@
 
         <div class="current-round-display" id="currentRoundDisplay">
             🎮 Current Status: Waiting to Start
-            <div id="adminTimerContainer" style="margin-top: 10px; display: none;">
-                <div style="font-size: 1.8rem; color: #f1c40f; position: relative;">
-                    ⏱️ Time Remaining: <span id="adminTimer">0:00</span>
-                    <span style="font-size: 0.9rem; opacity: 0.7; margin-left: 10px;">🌐 Server Synced</span>
-                </div>
-            </div>
         </div>
 
         <div class="game-controls">
@@ -572,7 +566,7 @@
 
         // Initialize
         window.onload = function() {
-            loadExistingGameState(); // Load existing state first
+            initializeGameState();
             loadTeamData();
             loadPrompts();
             startRealTimeListeners();
@@ -594,75 +588,25 @@
 
         async function startRound(round) {
             try {
-                // Calculate round duration in milliseconds
-                let roundDuration;
-                if (round === 1) roundDuration = 8 * 60 * 1000; // 8 minutes
-                else if (round === 2) roundDuration = 12 * 60 * 1000; // 12 minutes  
-                else if (round === 3) roundDuration = 3 * 60 * 1000; // 3 minutes
-                
-                const startTime = new Date();
-                const endTime = new Date(startTime.getTime() + roundDuration);
-                
-                // Update game state with timer info
+                // Simple update - just change the current round
                 await db.collection('gameState').doc('current').update({
                     currentRound: round,
-                    roundStartTime: firebase.firestore.Timestamp.fromDate(startTime),
-                    roundEndTime: firebase.firestore.Timestamp.fromDate(endTime),
-                    roundDuration: roundDuration,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 currentRound = round;
                 updateRoundDisplay();
                 updateControlButtons();
-                startAdminTimer(roundDuration);
                 
-                console.log(`Round ${round} started at ${startTime.toISOString()}, ends at ${endTime.toISOString()}`);
+                console.log(`Round ${round} started at ${new Date().toISOString()}`);
+                
+                // Show simple confirmation
                 alert(`✅ Round ${round} started for all teams!`);
                 
             } catch (error) {
                 console.error('Error starting round:', error);
                 alert('Error starting round. Please try again.');
             }
-        }
-
-        let adminTimer = null;
-        let adminTimeLeft = 0;
-
-        function startAdminTimer(duration) {
-            clearInterval(adminTimer);
-            adminTimeLeft = Math.floor(duration / 1000);
-            
-            adminTimer = setInterval(() => {
-                adminTimeLeft--;
-                updateAdminTimerDisplay();
-                
-                if (adminTimeLeft <= 0) {
-                    clearInterval(adminTimer);
-                    handleAdminTimerEnd();
-                }
-            }, 1000);
-        }
-
-        function updateAdminTimerDisplay() {
-            const timerElement = document.getElementById('adminTimer');
-            if (timerElement) {
-                const mins = Math.floor(adminTimeLeft / 60);
-                const secs = adminTimeLeft % 60;
-                timerElement.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-                
-                if (adminTimeLeft <= 60) {
-                    timerElement.style.color = '#e74c3c';
-                    timerElement.style.animation = 'pulse 1s infinite';
-                } else {
-                    timerElement.style.color = '#f1c40f';
-                    timerElement.style.animation = 'none';
-                }
-            }
-        }
-
-        function handleAdminTimerEnd() {
-            alert(`⏰ Round ${currentRound} time is up! Click "Stop Round" to end it.`);
         }
 
         async function forceUnlockAllSessions() {
@@ -773,21 +717,8 @@
             }
         }
 
-        async function initializeGameState() {
-            try {
-                await db.collection('gameState').doc('current').set({
-                    currentRound: 0,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                
-                updateRoundDisplay();
-            } catch (error) {
-                console.error('Error initializing game state:', error);
-            }
-        }
-
         async function resetEntireGame() {
-            if (!confirm(`🚨 DANGER: Reset ENTIRE GAME? This will:\n\n✗ Delete ALL scores for ALL rounds\n✗ Clear ALL submitted prompts\n✗ Reset game state to beginning\n✗ Unlock all team sessions\n✗ Clear all saved states\n\nThis action CANNOT be undone!\n\nType "RESET" in the next prompt to confirm.`)) {
+            if (!confirm(`🚨 DANGER: Reset ENTIRE GAME? This will:\n\n✗ Delete ALL scores for ALL rounds\n✗ Clear ALL submitted prompts\n✗ Reset game state to beginning\n✗ Unlock all team sessions\n\nThis action CANNOT be undone!\n\nType "RESET" in the next prompt to confirm.`)) {
                 return;
             }
             
@@ -800,14 +731,14 @@
             try {
                 const batch = db.batch();
                 
-                // Reset game state (clear timer fields too)
+                // Reset game state
                 const gameStateRef = db.collection('gameState').doc('current');
                 batch.set(gameStateRef, {
                     currentRound: 0,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                // Reset all teams (clear saved states too)
+                // Reset all teams
                 for (let i = 1; i <= 10; i++) {
                     const teamRef = db.collection('teams').doc(i.toString());
                     batch.set(teamRef, {
@@ -824,9 +755,6 @@
                 }
                 
                 await batch.commit();
-                
-                // Clear admin timer
-                clearInterval(adminTimer);
                 
                 // Clear all prompts in separate operation
                 try {
@@ -848,7 +776,7 @@
                     console.error('Error clearing prompts:', promptError);
                 }
                 
-                alert('🎮 ENTIRE GAME RESET SUCCESSFULLY!\n\n✅ All scores cleared\n✅ All prompts deleted\n✅ Game state reset\n✅ All sessions unlocked\n✅ All saved states cleared');
+                alert('🎮 ENTIRE GAME RESET SUCCESSFULLY!\n\n✅ All scores cleared\n✅ All prompts deleted\n✅ Game state reset\n✅ All sessions unlocked');
                 
                 // Reset local state
                 currentRound = 0;
@@ -868,54 +796,22 @@
 
         function updateRoundDisplay() {
             const display = document.getElementById('currentRoundDisplay');
-            const timerContainer = document.getElementById('adminTimerContainer');
             const controls = document.querySelectorAll('.round-control');
             
             // Reset all controls
             controls.forEach(control => control.classList.remove('active'));
             
             if (currentRound === 0) {
-                display.firstChild.textContent = '🎮 Current Status: Waiting to Start';
-                timerContainer.style.display = 'none';
+                display.textContent = '🎮 Current Status: Waiting to Start';
             } else if (currentRound >= 1 && currentRound <= 3) {
-                display.firstChild.textContent = `🎯 Current Status: Round ${currentRound} Active`;
+                display.textContent = `🎯 Current Status: Round ${currentRound} Active`;
                 document.getElementById(`round${currentRound}Control`).classList.add('active');
-                timerContainer.style.display = 'block';
             } else if (currentRound >= 11 && currentRound <= 13) {
                 const round = currentRound - 10;
-                display.firstChild.textContent = `⏹️ Current Status: Round ${round} Ended`;
-                timerContainer.style.display = 'none';
+                display.textContent = `⏹️ Current Status: Round ${round} Ended`;
             }
             
             updateControlButtons();
-        }
-
-        async function loadExistingGameState() {
-            try {
-                const gameDoc = await db.collection('gameState').doc('current').get();
-                if (gameDoc.exists) {
-                    const gameData = gameDoc.data();
-                    currentRound = gameData.currentRound || 0;
-                    
-                    // If there's an active round with timer, restore it
-                    if (currentRound >= 1 && currentRound <= 3 && gameData.roundEndTime) {
-                        const now = new Date();
-                        const endTime = gameData.roundEndTime.toDate();
-                        const timeLeft = Math.floor((endTime - now) / 1000);
-                        
-                        if (timeLeft > 0) {
-                            adminTimeLeft = timeLeft;
-                            startAdminTimer(timeLeft * 1000);
-                            console.log(`Restored timer for Round ${currentRound}: ${timeLeft} seconds remaining`);
-                        } else {
-                            console.log(`Round ${currentRound} timer already expired`);
-                        }
-                    }
-                }
-                updateRoundDisplay();
-            } catch (error) {
-                console.error('Error loading game state:', error);
-            }
         }
 
         function updateControlButtons() {
@@ -1056,19 +952,9 @@
             
             const teamsHTML = teams.map(team => {
                 const isLocked = team.sessionLocked || false;
-                
-                // Show live scores during active rounds, final scores otherwise
-                let round1Score = team.rounds?.round1?.score || 0;
-                let round2Score = team.rounds?.round2?.score || 0;
+                const round1Score = team.rounds?.round1?.score || 0;
+                const round2Score = team.rounds?.round2?.score || 0;
                 const round3Score = team.rounds?.round3?.manualScore || 0;
-                
-                // Show live scores if round is active and not completed
-                if (currentRound === 1 && !team.rounds?.round1?.completed && team.rounds?.round1?.liveScore !== undefined) {
-                    round1Score = team.rounds.round1.liveScore;
-                }
-                if (currentRound === 2 && !team.rounds?.round2?.completed && team.rounds?.round2?.liveScore !== undefined) {
-                    round2Score = team.rounds.round2.liveScore;
-                }
 
                 return `
                     <div class="team-card ${isLocked ? 'locked' : ''}">
@@ -1083,15 +969,11 @@
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 10px;">
                             <div>
-                                <div style="font-size: 0.8rem; opacity: 0.7;">
-                                    Round 1 ${currentRound === 1 && !team.rounds?.round1?.completed ? '🔴 LIVE' : ''}
-                                </div>
+                                <div style="font-size: 0.8rem; opacity: 0.7;">Round 1</div>
                                 <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">${round1Score}</div>
                             </div>
                             <div>
-                                <div style="font-size: 0.8rem; opacity: 0.7;">
-                                    Round 2 ${currentRound === 2 && !team.rounds?.round2?.completed ? '🔴 LIVE' : ''}
-                                </div>
+                                <div style="font-size: 0.8rem; opacity: 0.7;">Round 2</div>
                                 <div style="font-size: 1.2rem; font-weight: bold; color: #3498db;">${round2Score}</div>
                             </div>
                             <div>
@@ -1213,26 +1095,8 @@
             db.collection('gameState').doc('current').onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-                    const newRound = data.currentRound || 0;
-                    
-                    // Only update if round actually changed (avoid timer conflicts)
-                    if (newRound !== currentRound) {
-                        currentRound = newRound;
-                        updateRoundDisplay();
-                        
-                        // If there's an active timer, sync with it
-                        if (newRound >= 1 && newRound <= 3 && data.roundEndTime) {
-                            const now = new Date();
-                            const endTime = data.roundEndTime.toDate();
-                            const timeLeft = Math.floor((endTime - now) / 1000);
-                            
-                            if (timeLeft > 0) {
-                                adminTimeLeft = timeLeft;
-                                startAdminTimer(timeLeft * 1000);
-                                console.log(`Synced admin timer: ${timeLeft} seconds remaining`);
-                            }
-                        }
-                    }
+                    currentRound = data.currentRound || 0;
+                    updateRoundDisplay();
                 }
             });
 
