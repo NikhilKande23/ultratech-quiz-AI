@@ -463,6 +463,19 @@
         </div>
 
         <div class="game-reset-section">
+            <h3>🔧 Session Management</h3>
+            <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="control-btn" style="background: linear-gradient(45deg, #e67e22, #f39c12);" onclick="forceUnlockAllSessions()">
+                    🔓 Force Unlock All Sessions
+                </button>
+                <button class="control-btn" style="background: linear-gradient(45deg, #3498db, #2980b9);" onclick="forceRefreshAllTeams()">
+                    🔄 Force Refresh All Teams
+                </button>
+                <button class="control-btn" style="background: linear-gradient(45deg, #9b59b6, #8e44ad);" onclick="sendHeartbeatToAll()">
+                    💓 Send Heartbeat to All
+                </button>
+            </div>
+            
             <h3>🚨 Danger Zone</h3>
             <div class="warning-text">
                 ⚠️ This will reset EVERYTHING: all scores, prompts, and game state!
@@ -581,20 +594,137 @@
 
         async function startRound(round) {
             try {
-                await db.collection('gameState').doc('current').update({
+                // First, ensure all teams are in a good state
+                await forceUnlockExpiredSessions();
+                
+                // Update game state with timestamp for better synchronization
+                const gameStateUpdate = {
                     currentRound: round,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                    roundStartTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+                    forceSync: Date.now() // Force sync timestamp
+                };
+                
+                await db.collection('gameState').doc('current').update(gameStateUpdate);
+                
+                // Also send heartbeat to all teams to wake up any sleeping listeners
+                await sendHeartbeatToAll();
                 
                 currentRound = round;
                 updateRoundDisplay();
                 updateControlButtons();
+                
+                // Log the round start
+                console.log(`Round ${round} started at ${new Date().toISOString()}`);
+                
+                // Show confirmation
+                setTimeout(() => {
+                    const activeTeams = teams.filter(t => t.sessionLocked).length;
+                    alert(`✅ Round ${round} started!\n\n📊 Active Teams: ${activeTeams}/10\n⏰ Time: ${new Date().toLocaleTimeString()}\n\nIf any team doesn't start, use "Force Refresh All Teams" button.`);
+                }, 1000);
                 
             } catch (error) {
                 console.error('Error starting round:', error);
                 alert('Error starting round. Please try again.');
             }
         }
+
+        async function forceUnlockAllSessions() {
+            if (!confirm('🔓 Force unlock ALL team sessions? This will allow new team members to join.')) {
+                return;
+            }
+            
+            try {
+                const batch = db.batch();
+                
+                for (let i = 1; i <= 10; i++) {
+                    const teamRef = db.collection('teams').doc(i.toString());
+                    batch.update(teamRef, {
+                        sessionLocked: false,
+                        sessionTimeout: firebase.firestore.FieldValue.delete(),
+                        lastActivity: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                
+                await batch.commit();
+                alert('✅ All team sessions have been force unlocked!');
+                
+                // Refresh data
+                loadTeamData();
+                
+            } catch (error) {
+                console.error('Error unlocking sessions:', error);
+                alert('Error unlocking sessions. Please try again.');
+            }
+        }
+
+        async function forceUnlockExpiredSessions() {
+            try {
+                const now = new Date();
+                const batch = db.batch();
+                let unlockedCount = 0;
+                
+                const snapshot = await db.collection('teams').get();
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.sessionLocked && data.sessionTimeout) {
+                        const timeout = data.sessionTimeout.toDate();
+                        if (now > timeout) {
+                            batch.update(doc.ref, {
+                                sessionLocked: false,
+                                sessionTimeout: firebase.firestore.FieldValue.delete()
+                            });
+                            unlockedCount++;
+                        }
+                    }
+                });
+                
+                if (unlockedCount > 0) {
+                    await batch.commit();
+                    console.log(`Auto-unlocked ${unlockedCount} expired sessions`);
+                }
+                
+            } catch (error) {
+                console.error('Error checking expired sessions:', error);
+            }
+        }
+
+        async function forceRefreshAllTeams() {
+            try {
+                // Send a force refresh signal to all teams
+                await db.collection('gameState').doc('current').update({
+                    forceRefresh: Date.now(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert('🔄 Force refresh signal sent to all teams!\n\nThis will wake up any sleeping team pages.');
+                
+            } catch (error) {
+                console.error('Error sending refresh signal:', error);
+                alert('Error sending refresh signal. Please try again.');
+            }
+        }
+
+        async function sendHeartbeatToAll() {
+            try {
+                // Send heartbeat to wake up listeners
+                await db.collection('gameState').doc('current').update({
+                    heartbeat: Date.now(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log('Heartbeat sent to all teams');
+                return true;
+                
+            } catch (error) {
+                console.error('Error sending heartbeat:', error);
+                return false;
+            }
+        }
+
+        // Auto-check for expired sessions every 30 seconds
+        setInterval(forceUnlockExpiredSessions, 30000);
 
         async function stopRound() {
             try {
@@ -913,6 +1043,21 @@
                 const round1Score = team.rounds?.round1?.score || 0;
                 const round2Score = team.rounds?.round2?.score || 0;
                 const round3Score = team.rounds?.round3?.manualScore || 0;
+                
+                // Calculate time since last activity
+                let lastActivityText = 'Unknown';
+                if (team.lastActivity) {
+                    const now = new Date();
+                    const lastActivity = team.lastActivity.toDate();
+                    const diffMinutes = Math.floor((now - lastActivity) / (1000 * 60));
+                    if (diffMinutes < 1) {
+                        lastActivityText = 'Just now';
+                    } else if (diffMinutes < 60) {
+                        lastActivityText = `${diffMinutes}m ago`;
+                    } else {
+                        lastActivityText = `${Math.floor(diffMinutes / 60)}h ago`;
+                    }
+                }
 
                 return `
                     <div class="team-card ${isLocked ? 'locked' : ''}">
@@ -925,7 +1070,10 @@
                         <div style="font-size: 0.9rem; color: #bdc3c7; margin-bottom: 10px;">
                             ${team.fullName}
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
+                        <div style="font-size: 0.8rem; color: #95a5a6; margin-bottom: 10px;">
+                            Last activity: ${lastActivityText}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; margin-bottom: 10px;">
                             <div>
                                 <div style="font-size: 0.8rem; opacity: 0.7;">Round 1</div>
                                 <div style="font-size: 1.2rem; font-weight: bold; color: #27ae60;">${round1Score}</div>
@@ -939,11 +1087,38 @@
                                 <div style="font-size: 1.2rem; font-weight: bold; color: #9b59b6;">${round3Score}</div>
                             </div>
                         </div>
+                        ${isLocked ? `
+                            <button class="control-btn" style="font-size: 0.8rem; padding: 5px 10px;" 
+                                    onclick="forceUnlockTeam('${team.id}')">
+                                🔓 Force Unlock
+                            </button>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
 
             container.innerHTML = teamsHTML;
+        }
+
+        async function forceUnlockTeam(teamId) {
+            if (!confirm(`🔓 Force unlock ${teamData[teamId].name}?`)) {
+                return;
+            }
+            
+            try {
+                await db.collection('teams').doc(teamId).update({
+                    sessionLocked: false,
+                    sessionTimeout: firebase.firestore.FieldValue.delete(),
+                    lastActivity: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                alert(`✅ ${teamData[teamId].name} has been force unlocked!`);
+                loadTeamData();
+                
+            } catch (error) {
+                console.error('Error unlocking team:', error);
+                alert('Error unlocking team. Please try again.');
+            }
         }
 
         function updatePromptsDisplay() {
