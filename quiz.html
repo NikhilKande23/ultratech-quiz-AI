@@ -106,6 +106,17 @@
             background: rgba(0,0,0,0.3);
             padding: 15px 25px;
             border-radius: 15px;
+            position: relative;
+        }
+
+        .timer-display::after {
+            content: "🌐";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            title: "Synced with server";
         }
 
         .timer-display.warning {
@@ -116,6 +127,10 @@
         .timer-display.stopped {
             color: #7f8c8d;
             opacity: 0.6;
+        }
+
+        .timer-display.stopped::after {
+            content: "⏸️";
         }
 
         @keyframes pulse {
@@ -792,11 +807,11 @@
             const question = round1Questions[currentQuestionIndex];
             const container = document.getElementById('quizContainer');
             
-            // Check if we're in waiting mode (currentRound = 0) or active mode (currentRound = 1 and roundActive = true)
+            // Simple check: if round is not active, show waiting state
             const isWaiting = (currentRound === 0 || !roundActive);
             
             const optionsHTML = question.options.map((option, index) => 
-                `<button class="option-btn ${isWaiting ? 'disabled' : ''}" onclick="selectAnswer(${index}, 1)">${option}</button>`
+                `<button class="option-btn ${isWaiting ? 'disabled' : ''}" onclick="selectAnswer(${index}, 1)" ${isWaiting ? 'disabled' : ''}>${option}</button>`
             ).join('');
 
             const waitingMessage = isWaiting ? `
@@ -828,6 +843,11 @@
                     </div>
                 </div>
             `;
+            
+            // Update timer display if active
+            if (!isWaiting) {
+                updateTimerDisplay();
+            }
         }
 
 
@@ -917,8 +937,11 @@
             const question = questions[currentQuestionIndex];
             const options = document.querySelectorAll('.option-btn');
             
-            // Disable all options
-            options.forEach(btn => btn.style.pointerEvents = 'none');
+            // Disable all options immediately
+            options.forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.disabled = true;
+            });
             
             const isCorrect = question.correct.includes(selectedIndex);
             const selectedOption = options[selectedIndex];
@@ -931,12 +954,18 @@
                 selectedOption.classList.add('wrong');
             }
             
-            // Auto-advance after 2 seconds
+            // Save state after answering
+            saveCurrentState();
+            
+            // Auto-advance after 2 seconds - make sure this always works
             setTimeout(() => {
                 currentQuestionIndex++;
+                saveCurrentState(); // Save updated question index
+                
+                // Force advance to next question
                 if (round === 1) {
                     displayRound1Question();
-                } else {
+                } else if (round === 2) {
                     displayRound2Question();
                 }
             }, 2000);
@@ -969,6 +998,7 @@
                 });
 
                 currentPromptTask++;
+                saveCurrentState(); // Save updated task index
                 displayPromptTask();
             } catch (error) {
                 console.error('Error submitting prompt:', error);
@@ -984,7 +1014,8 @@
                 await db.collection('teams').doc(teamId).update({
                     'rounds.round1.score': currentScore,
                     'rounds.round1.completed': true,
-                    'rounds.round1.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                    'rounds.round1.completedAt': firebase.firestore.FieldValue.serverTimestamp(),
+                    currentState: firebase.firestore.FieldValue.delete() // Clear saved state
                 });
                 
                 showRoundComplete(1, currentScore);
@@ -998,7 +1029,8 @@
                 await db.collection('teams').doc(teamId).update({
                     'rounds.round2.score': currentScore,
                     'rounds.round2.completed': true,
-                    'rounds.round2.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                    'rounds.round2.completedAt': firebase.firestore.FieldValue.serverTimestamp(),
+                    currentState: firebase.firestore.FieldValue.delete() // Clear saved state
                 });
                 
                 showRoundComplete(2, currentScore);
@@ -1011,7 +1043,8 @@
             try {
                 await db.collection('teams').doc(teamId).update({
                     'rounds.round3.completed': true,
-                    'rounds.round3.completedAt': firebase.firestore.FieldValue.serverTimestamp()
+                    'rounds.round3.completedAt': firebase.firestore.FieldValue.serverTimestamp(),
+                    currentState: firebase.firestore.FieldValue.delete() // Clear saved state
                 });
                 
                 showRoundComplete(3, 'Submitted');
@@ -1037,6 +1070,13 @@
         function handleRoundEnd() {
             roundActive = false;
             clearInterval(timer);
+            
+            // Clear saved state when round ends
+            if (db && teamId) {
+                db.collection('teams').doc(teamId).update({
+                    currentState: firebase.firestore.FieldValue.delete()
+                }).catch(error => console.error('Error clearing state on round end:', error));
+            }
             
             if (currentRound === 11) { // Round 1 ended
                 completeRound1();
