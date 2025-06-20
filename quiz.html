@@ -19,9 +19,23 @@
             overflow-x: hidden;
         }
 
+        .logo-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-img {
+            height: 60px;
+        }
+
         .container {
             max-width: 1000px;
-            margin: 0 auto;
+            margin: 80px auto 0; /* Margin top for logos */
             padding: 20px;
         }
 
@@ -406,6 +420,10 @@
     </style>
 </head>
 <body>
+    <div class="logo-container">
+        <img src="aditya-birla-logo copy.png" alt="Aditya Birla Logo" class="logo-img">
+        <img src="dit-logo.png" alt="DIT Logo" class="logo-img">
+    </div>
     <div class="connection-status" id="connectionStatus">🔄 Connecting...</div>
     
     <div class="container">
@@ -456,6 +474,7 @@
         let currentScore = 0;
         let timer = null;
         let timeLeft = 0;
+        let roundEndTime = null; // Authoritative end time from server
         let currentPromptTask = 0;
         let roundActive = false;
         let db = null;
@@ -464,107 +483,72 @@
         // Question Banks
         const round1Questions = [
             {
-                question: "What is the main purpose of Generative AI?",
-                options: ["Storing large datasets", "Creating structured databases", "Running data backups", "Generating new content such as text, images, or audio", "Encrypting network traffic", "Hosting APIs"],
+                question: "What is the main benefit of AI-powered predictive maintenance in manufacturing?",
+                options: ["Reduces labor costs", "Eliminates all failures", "Increases production speed", "Reduces material waste", "Prevents breakdowns early", "Automates quality control"],
+                correct: [4],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "When a system understands and responds to human language queries, this represents which AI capability?",
+                options: ["Natural Language Processing", "Computer Vision Analytics", "Robotic Process Automation", "Predictive Analytics Modeling", "Machine Learning Algorithms", "Deep Learning Networks"],
+                correct: [0],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "Expert control systems in manufacturing primarily optimize which aspect?",
+                options: ["Employee scheduling", "Transportation routes", "Customer management", "Process operations", "Financial reporting", "Inventory tracking"],
                 correct: [3],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "Which technology powers most generative AI models today?",
-                options: ["CNN", "RPA", "Decision Trees", "Transformer-based architectures", "JSON APIs", "SQL Engines"],
-                correct: [3],
+                question: "Machine Learning algorithms in quality control primarily help with which function?",
+                options: ["Production scheduling", "Employee training", "Equipment maintenance", "Energy monitoring", "Pattern recognition", "Inventory management"],
+                correct: [4],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "What does the term 'prompt' refer to in Gen AI?",
-                options: ["A scheduled job", "A BI dashboard", "Input text used to guide AI output", "Error logs", "KPI file", "SQL connection string"],
+                question: "What distinguishes Agentic AI from traditional chatbots in business applications?",
+                options: ["Uses larger datasets", "Requires less computing", "Takes autonomous actions", "Processes text faster", "Costs less to implement", "Needs human oversight"],
                 correct: [2],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "Which of these tasks can be automated using Gen AI?",
-                options: ["ERP configurations", "Text summarization", "Server provisioning", "Log rotation", "Internet routing", "Network segmentation"],
+                question: "In machine learning, what does 'training data' primarily determine?",
+                options: ["Processing speed", "Model accuracy", "Storage requirements", "User interface design", "Network connectivity", "Hardware specifications"],
                 correct: [1],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "What does 'fine-tuning' a Gen AI model involve?",
-                options: ["Making it smaller", "Training it on domain-specific data", "Changing the font size", "Refreshing output", "Restarting memory", "Compressing model weights"],
+                question: "A cement plant AI system saves 1.90 lakh litres of fuel annually through equipment monitoring. This demonstrates which AI application category?",
+                options: ["Customer analytics", "Operational optimization", "Financial forecasting", "Supply chain planning", "Quality assurance", "Safety monitoring"],
                 correct: [1],
                 difficulty: "simple",
                 points: 3
             },
             {
-                question: "How does a Gen AI system improve its response accuracy?",
-                options: ["Manual updates by admins", "Learning from user feedback and corrections", "Retraining from scratch each time", "Adding more hardware", "Increasing prompt length", "Reducing tokens"],
+                question: "When multiple AI systems work together - one detecting issues, another scheduling repairs, and a third optimizing operations - this represents which concept?",
+                options: ["Multi-agent orchestration", "Supervised learning", "Neural network processing", "Reinforcement learning", "Data pipeline automation", "Cloud computing integration"],
+                correct: [0],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "For a Digital Twin to provide real-time operational insights in manufacturing, which combination is most essential?",
+                options: ["Cloud storage and APIs", "Mobile apps and dashboards", "IoT sensors and ML", "Blockchain and encryption", "GPS tracking and mapping", "Social media and analytics"],
+                correct: [2],
+                difficulty: "simple",
+                points: 3
+            },
+            {
+                question: "What is the primary difference between Generative AI and traditional AI in business applications?",
+                options: ["Processing speed capabilities", "Content creation ability", "Data storage requirements", "Implementation complexity", "Hardware specifications", "Security protocols"],
                 correct: [1],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "In enterprise document automation, Gen AI can:",
-                options: ["Export PowerPoints", "Schedule HR interviews", "Draft policy documents using learned tone and structure", "Track inventory levels", "Send calendar invites", "Calculate depreciation"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "Which prompt will likely yield the best result for summarizing a 10-page legal document?",
-                options: ["Summarize", "Do it fast", "Show me contents", "Summarize this legal document into 5 key bullet points", "TL;DR", "Explain simply"],
-                correct: [3],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "Which function is least aligned with Generative AI?",
-                options: ["Creating code snippets", "Drafting emails", "Running real-time analytics", "Generating designs", "Brainstorming ideas", "Text translation"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "A major risk of using Generative AI in sensitive environments is:",
-                options: ["Faster runtime", "Higher resolution", "Hallucination (generating false facts)", "Lower token count", "Excessive memory", "Cleaner syntax"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "In a customer service chatbot built using Gen AI, what must be added to ensure safety in responses?",
-                options: ["VPN firewall", "Scheduled prompts", "SQL logging", "Moderation layer and fallback rules", "Syntax converter", "Time filter"],
-                correct: [3],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "What makes a Gen AI pipeline enterprise-ready?",
-                options: ["Single-token prompting", "No-code UI", "Data governance + prompt validation + audit logs", "GPU overclocking", "Slack notifications", "Simple LLM wrapper"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "Which issue can arise when prompts are not specific in Gen AI applications?",
-                options: ["Model loading failure", "Irrelevant or misleading outputs", "Browser error", "Token overflow", "Port conflict", "DNS error"],
-                correct: [1],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "Which architectural element improves output quality in a multi-agent Gen AI system?",
-                options: ["CDN cache", "Static routing", "Role-based agent orchestration", "Hardcoded syntax", "Plain prompts", "File export triggers"],
-                correct: [2],
-                difficulty: "simple",
-                points: 3
-            },
-            {
-                question: "In legal or finance domains, how do organizations minimize AI-generated hallucinations?",
-                options: ["Give bigger prompts", "Use more RAM", "Add retrieval-augmented generation (RAG) with real documents", "Disable temperature", "Mask outputs", "Tokenize manually"],
-                correct: [2],
                 difficulty: "simple",
                 points: 3
             }
@@ -572,81 +556,81 @@
 
         const round2Questions = [
             {
-                question: "A plant supervisor wants an AI system to identify the top 3 causes of frequent breakdowns in a kiln over the past 6 months and automatically recommend actions. Which capability must the AI system include to fulfill this task effectively?",
-                scenario: "Agentic Decision Flow",
-                options: ["Rule-based alerting", "Scheduled data exports", "Static BI dashboards", "Multimodal reasoning & tool-usage", "Database replication", "Email distribution workflow"],
+                scenario: "An ML churn model's accuracy plummets after merging data from an acquired company, as it now misidentifies loyal clients.",
+                question: "What is the most likely technical cause for this failure?",
+                options: ["Concept drift from the new, distinct customer behaviors", "A recent update to the model's core algorithm", "Data latency issues from the new cloud environment", "Insufficient computing power for the larger dataset"],
+                correct: [0],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "A retailer's delivery AI can optimize for either speed or cost. With the primary company goal of improving profit margins, what is the best success metric?",
+                question: "What is the most critical success metric for this AI initiative?",
+                options: ["Reduction in average delivery time", "Decrease in total cost-per-package delivered", "Reduction in daily route planning time", "Achieving a 5-point lift in customer satisfaction (CSAT)"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "A stable, 95% accurate ML model for predicting equipment failure suddenly starts missing critical alerts. The model's code is unchanged.",
+                question: "What is the most probable cause of this sudden degradation in performance?",
+                options: ["The model has become overfitted to historical data", "A failure in the nightly data-refresh (ETL) process", "A key upstream data sensor is failing or miscalibrated", "The algorithm requires a theoretical update from R&D"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "A GenAI agent for HR questions is fluent but sometimes provides confident yet incorrect answers on nuanced company policies.",
+                question: "Which technical approach offers the most robust solution?",
+                options: ["Switching to the latest, most powerful base model available", "Increasing the number of agents to handle more queries", "Implementing a Retrieval-Augmented Generation (RAG) architecture", "Retraining the model weekly on a larger public dataset"],
+                correct: [2],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "When choosing a first Agentic AI project, you must decide between automating the high-risk client onboarding process or the low-risk internal expense reporting.",
+                question: "What is the most prudent strategic first step?",
+                options: ["Pursue the high-risk client process to maximize early impact", "Automate the low-risk internal process to build capability first", "Outsource both projects to a specialist AI vendor", "Benchmark both options with a consulting firm for a quarter"],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "An AI inspects products on a production line. An error where it wrongly flags a good product costs $10 to re-check. An error where it misses a real defect costs the company $5,000 in recalls.",
+                question: "Given the high cost of missing a defect, what should the AI's primary goal be?",
+                options: ["Flag only definite defects to minimize re-inspection costs.", "Catch every possible defect, even if some good products are re-inspected.", "Treat both types of errors as equally important to the business.", "Optimize for the fastest possible inspection speed."],
+                correct: [1],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "To improve a B2B SaaS company's AI sales forecast, the team needs to add the most powerful leading indicator of future revenue.",
+                question: "Which data source would provide the most predictive lift?",
+                options: ["Aggregate customer feature usage and engagement data", "National unemployment and inflation figures", "Marketing campaign spend and attribution data", "The company's social media follower growth rate"],
+                correct: [0],
+                difficulty: "scenario",
+                points: 5
+            },
+            {
+                scenario: "An airline's predictive AI is 99% accurate on common faults but fails to predict a rare, critical failure not seen in its training data.",
+                question: "This failure highlights which fundamental limitation of ML?",
+                options: ["The system lacks sufficient real-time sensor data", "The human technicians are not trusting the AI's outputs", "The algorithm's processing speed is inadequate for aviation", "The training data underrepresents \"black swan\" events"],
                 correct: [3],
                 difficulty: "scenario",
                 points: 5
             },
             {
-                question: "A commercial officer types 'Show me the YoY cement dispatch trend for Gujarat zone' into a dashboard assistant. Which technology stack supports this workflow?",
-                scenario: "Natural Language to Insights",
-                options: ["SQL Views + Excel", "OCR + Chatbot", "Gen BI with NL-to-SQL + Visualization Layer", "SAP Export + Email Report", "Predictive Maintenance Bot", "PowerPoint Integration"],
-                correct: [2],
+                scenario: "A consulting firm's GenAI produces flawless grammar but lacks the company's unique analytical style and voice.",
+                question: "What is the most direct way to infuse the AI with the firm's unique voice?",
+                options: ["Engineering more complex, multi-shot prompts", "Implementing a stricter content and brand safety filter", "Switching to a larger, more generalist foundation model", "Fine-tuning the model on the firm's archive of past reports"],
+                correct: [3],
                 difficulty: "scenario",
                 points: 5
             },
             {
-                question: "A Generative BI assistant receives a vague query: 'Why are margins lower this month?' What is the most Agentic AI-like next step?",
-                scenario: "Agentic Response Loop",
-                options: ["Send a report link", "Ask for timeframe and business unit for clarity", "Display top 10 margin lines", "Ping the finance team", "Highlight total revenue", "Recommend a dashboard"],
-                correct: [1],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "An AI agent analyzes dispatch issues, checks weather patterns, finds consistent rainfall in one region, and suggests increasing lead time buffers. What best describes this process?",
-                scenario: "Cognitive Loop",
-                options: ["Data visualization", "Agentic AI with contextual planning", "KPI Commentary", "Notification system", "Excel trend line", "Static Reporting"],
-                correct: [1],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "In an enterprise workflow, one Gen AI agent prepares the demand forecast, while another validates it against last year's trends. What is this an example of?",
-                scenario: "Multi-Agent Collaboration",
-                options: ["Role-based BI", "Multi-agent orchestration", "RPA", "ML hyperparameter tuning", "KPI automation", "Chatbot interface"],
-                correct: [1],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "A team writes this prompt: 'Make me a dashboard for dispatch.' What's the main issue?",
-                scenario: "Prompt Engineering",
-                options: ["It's too long", "It's not SQL compatible", "It's missing specificity and context", "It's grammatically wrong", "It's anti-pattern", "Needs API key"],
-                correct: [2],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "After a failed dashboard generation attempt, the AI revises the SQL query automatically and retries. Which Agentic AI principle does this demonstrate?",
-                scenario: "Feedback-Driven Improvement",
-                options: ["Prompt chaining", "Reasoning & retry loop", "PDF parsing", "Human feedback loop", "Web scraping", "Linear regression"],
-                correct: [1],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "Over time, your Gen BI assistant starts giving more accurate commentary summaries for monthly MIS reports based on analyst feedback. Which feature is at play?",
-                scenario: "Self-Improving Workflows",
-                options: ["Hardcoded rules", "Offline training", "Human-in-the-loop reinforcement", "Batch data merge", "UI refresh rate", "KPI hierarchy"],
-                correct: [2],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "A plant manager asks, 'Why did Unit 2 consume more power than Unit 1 last week?' Which is the most Gen BI-driven response path?",
-                scenario: "Root Cause Tracing",
-                options: ["Emailing the last MIS report", "Opening SAP power log", "Auto-querying past data and visualizing daily consumption with annotations", "Asking maintenance team", "Exporting raw CSV", "Showing a bar chart of units"],
-                correct: [2],
-                difficulty: "scenario",
-                points: 5
-            },
-            {
-                question: "The assistant automatically generates this insight: 'Sales dropped 5% QoQ due to higher returns in East Zone and delayed dispatches from Chittorgarh plant.' This is an example of:",
-                scenario: "KPI Commentary Automation",
-                options: ["KPI aggregation", "Data storytelling", "Automated Gen BI commentary", "Static content generation", "Dashboard embedding", "ChatGPT plugin"],
+                scenario: "The CDIO wants to deploy GenAI agents across Finance, HR, and Sales. The goal is to provide consistent, accurate answers, but each department's data is currently siloed and of varying quality.",
+                question: "To ensure these agents are reliable, what is the most critical foundational step?",
+                options: ["Establish a robust, cross-functional AI governance board.", "Select a single, powerful LLM for all agents to ensure consistency.", "Create a data catalog defining authoritative data sources for the AI.", "Immediately hire prompt engineers for each department."],
                 correct: [2],
                 difficulty: "scenario",
                 points: 5
@@ -712,50 +696,20 @@
 
         async function initializeTeam() {
             if (!teamId || !db) return;
-            
+
             try {
-                // Check if session is already locked
-                const teamDoc = await db.collection('teams').doc(teamId).get();
-                const existingTeamData = teamDoc.data();
-                
-                if (existingTeamData && existingTeamData.sessionLocked) {
-                    const now = new Date().getTime();
-                    const lockTime = existingTeamData.sessionTimeout ? existingTeamData.sessionTimeout.toMillis() : 0;
-                    
-                    if (now < lockTime) {
-                        showSessionExpired();
-                        return;
-                    }
-                }
-                
-                // Lock the session and initialize/restore state
+                // Lock the session for this team
                 const team = teamData[teamId];
                 await db.collection('teams').doc(teamId).set({
                     name: team.name,
                     fullName: team.fullName,
                     sessionLocked: true,
-                    sessionTimeout: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-                    rounds: {
-                        round1: { score: 0, completed: false, answers: [] },
-                        round2: { score: 0, completed: false, answers: [] },
-                        round3: { prompts: [], manualScore: 0, completed: false }
-                    },
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
-                
-                // Load existing state if any
-                await loadCurrentState();
-                
-                // Start listening for game state
+
+                // Start listening for game state changes, which will drive the UI
                 listenForGameState();
-                
-                // Show first question or restored state
-                if (currentRound === 0) {
-                    displayFirstQuestion();
-                } else {
-                    updateGameDisplay();
-                }
-                
+
             } catch (error) {
                 console.error('Error initializing team:', error);
                 updateConnectionStatus(false);
@@ -811,50 +765,46 @@
 
         function listenForGameState() {
             if (!db) return;
-            
-            gameStateListener = db.collection('gameState').doc('current').onSnapshot((doc) => {
-                if (doc.exists) {
-                    const gameData = doc.data();
-                    const newRound = gameData.currentRound || 0;
-                    
-                    if (newRound !== currentRound) {
-                        // Check if we need to sync timer
-                        if (newRound >= 1 && newRound <= 3 && gameData.roundEndTime) {
-                            syncTimerWithServer(gameData);
-                        }
-                        
-                        currentRound = newRound;
-                        updateGameDisplay();
-                    } else if (newRound >= 1 && newRound <= 3 && gameData.roundEndTime && !roundActive) {
-                        // Sync timer even if round hasn't changed
-                        syncTimerWithServer(gameData);
-                    }
+
+            gameStateListener = db.collection('gameState').doc('current').onSnapshot(async (doc) => {
+                if (!doc.exists) {
+                    console.log("No game state found. Waiting for admin.");
+                    displayWaitingScreen("Waiting for admin to start the game...");
+                    return;
                 }
+
+                const gameData = doc.data();
+                const newRound = gameData.currentRound || 0;
+                const wasActive = roundActive;
+
+                // Update state based on Firebase data
+                const isRoundNumberActive = newRound >= 1 && newRound <= 3;
+                const isTimerValid = gameData.roundEndTime && (gameData.roundEndTime.toDate() > new Date());
+
+                currentRound = newRound;
+                roundActive = isRoundNumberActive && isTimerValid;
+
+                // If the round has just become active, load state and start the timer
+                if (roundActive && !wasActive) {
+                    console.log(`Round ${currentRound} is now active.`);
+                    await loadCurrentState(); // Load any saved progress
+                    roundEndTime = gameData.roundEndTime.toDate();
+                    timeLeft = Math.max(0, Math.floor((roundEndTime - new Date()) / 1000));
+                    startTimer();
+                } else if (!roundActive && wasActive) {
+                    console.log(`Round ${currentRound} is no longer active.`);
+                    clearInterval(timer);
+                }
+                
+                // Always update the display to reflect the latest state from Firebase
+                updateGameDisplay();
+
             }, (error) => {
                 console.error('Error listening to game state:', error);
                 updateConnectionStatus(false);
             });
         }
 
-        function syncTimerWithServer(gameData) {
-            if (!gameData.roundEndTime) return;
-            
-            const now = new Date();
-            const endTime = gameData.roundEndTime.toDate();
-            const serverTimeLeft = Math.floor((endTime - now) / 1000);
-            
-            if (serverTimeLeft > 0) {
-                timeLeft = serverTimeLeft;
-                if (!roundActive) {
-                    roundActive = true;
-                    startTimer();
-                }
-                console.log(`Timer synced with server: ${timeLeft} seconds remaining`);
-            } else {
-                console.log('Server timer has expired');
-                handleTimeUp();
-            }
-        }
 
         function displayFirstQuestion() {
             // Show Round 1 Question 1 but keep currentRound = 0 until admin starts
@@ -865,54 +815,22 @@
         }
 
         function updateGameDisplay() {
+            // This function now purely renders the UI based on the current state variables
             if (currentRound === 0) {
                 displayFirstQuestion();
             } else if (currentRound === 1) {
-                if (!roundActive) {
-                    startRound1Timer();
-                }
                 displayRound1Question();
             } else if (currentRound === 2) {
-                if (!roundActive) {
-                    startRound2();
-                }
+                displayRound2Question();
             } else if (currentRound === 3) {
-                if (!roundActive) {
-                    startRound3();
-                }
+                displayPromptTask();
             } else if (currentRound >= 11 && currentRound <= 13) {
+                // Admin has ended the round
                 handleRoundEnd();
+            } else {
+                 // Default waiting screen if state is unusual
+                displayWaitingScreen("Synchronizing with game server...");
             }
-        }
-
-        function startRound1Timer() {
-            roundActive = true;
-            if (timeLeft <= 0) {
-                timeLeft = 8 * 60; // Default 8 minutes if not synced
-            }
-            startTimer();
-            displayRound1Question();
-        }
-
-        function startRound2() {
-            roundActive = true;
-            currentQuestionIndex = 0;
-            currentScore = 0;
-            if (timeLeft <= 0) {
-                timeLeft = 12 * 60; // Default 12 minutes if not synced
-            }
-            startTimer();
-            displayRound2Question();
-        }
-
-        function startRound3() {
-            roundActive = true;
-            currentPromptTask = 0;
-            if (timeLeft <= 0) {
-                timeLeft = 3 * 60; // Default 3 minutes if not synced
-            }
-            startTimer();
-            displayPromptTask();
         }
 
         function displayRound1Question() {
@@ -938,11 +856,11 @@
             ` : '';
 
             container.innerHTML = `
-                <div class="round-indicator">🧠 Round 1: Fundamentals (${currentQuestionIndex + 1}/15)</div>
+                <div class="round-indicator">🧠 Round 1: Fundamentals (${currentQuestionIndex + 1}/10)</div>
                 ${waitingMessage}
                 <div class="quiz-header">
                     <div class="question-info">
-                        <div class="question-counter">Question ${currentQuestionIndex + 1} of 15</div>
+                        <div class="question-counter">Question ${currentQuestionIndex + 1} of 10</div>
                         <div class="score-display">Score: ${currentScore} points</div>
                     </div>
                     <div class="timer-display ${isWaiting ? 'stopped' : ''}" id="timerDisplay">
@@ -1217,17 +1135,30 @@
         function startTimer() {
             clearInterval(timer);
             timer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                if (timeLeft <= 60) {
-                    const display = document.getElementById('timerDisplay');
-                    if (display) display.classList.add('warning');
+                if (roundEndTime) {
+                    const now = new Date();
+                    timeLeft = Math.max(0, Math.floor((roundEndTime - now) / 1000));
+                } else {
+                    // Fallback if end time is not set, though it should be.
+                    timeLeft = Math.max(0, timeLeft - 1);
                 }
-                
+
+                updateTimerDisplay();
+
+                const display = document.getElementById('timerDisplay');
+                if (display) {
+                    if (timeLeft <= 60 && timeLeft > 0) {
+                        display.classList.add('warning');
+                    } else {
+                        display.classList.remove('warning');
+                    }
+                }
+
                 if (timeLeft <= 0) {
                     clearInterval(timer);
-                    handleTimeUp();
+                    if (roundActive) {
+                        handleTimeUp();
+                    }
                 }
             }, 1000);
         }
@@ -1304,45 +1235,14 @@
             }
         }
 
-        // Enhanced cleanup with better error handling
-        window.addEventListener('beforeunload', async () => {
-            await cleanupSession();
-        });
-
-        window.addEventListener('unload', async () => {
-            await cleanupSession();
-        });
-
-        // Also cleanup on page visibility change (when tab becomes hidden)
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'hidden') {
-                await cleanupSession();
-            }
-        });
-
-        async function cleanupSession() {
-            if (db && teamId) {
-                try {
-                    // Unsubscribe from listeners
-                    if (gameStateListener) {
-                        gameStateListener();
-                    }
-                    
-                    // Save current state before unlocking
-                    await saveCurrentState();
-                    
-                    // Unlock session
-                    await db.collection('teams').doc(teamId).update({
-                        sessionLocked: false,
-                        sessionTimeout: firebase.firestore.FieldValue.delete(),
-                        lastActivity: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    
-                    console.log('Session cleaned up successfully');
-                } catch (error) {
-                    console.log('Error cleaning up session:', error);
-                }
-            }
+        function displayWaitingScreen(message) {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = `
+                <div class="waiting-screen">
+                    <h2>${message}</h2>
+                    <p>Please wait, the quiz will begin shortly.</p>
+                </div>
+            `;
         }
 
         // Add debugging function
