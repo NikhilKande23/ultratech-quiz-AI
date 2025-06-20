@@ -14,12 +14,27 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #95a5a6 100%);
-            min-height: 100vh;
+            height: 100vh;
             color: white;
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            overflow: hidden; /* Prevents scrolling */
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-img {
+            height: 80px; /* Increased logo size */
         }
 
         .container {
@@ -33,6 +48,7 @@
             max-width: 900px;
             width: 100%;
             animation: slideIn 0.8s ease;
+            /* margin-top: 80px; */ /* Removed for flexbox centering */
         }
 
         @keyframes slideIn {
@@ -173,14 +189,14 @@
 
         .team-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(5, 1fr); /* 5 columns */
+            gap: 10px; /* Reduced gap */
             margin-top: 20px;
         }
 
         .team-link {
             background: rgba(255,255,255,0.1);
-            padding: 18px 20px;
+            padding: 12px 10px; /* Reduced padding */
             border-radius: 12px;
             text-decoration: none;
             color: white;
@@ -219,7 +235,7 @@
         }
 
         .team-name {
-            font-size: 1.1rem;
+            font-size: 1rem; /* Reduced font size */
             color: #f1c40f;
             margin-bottom: 5px;
             position: relative;
@@ -227,7 +243,7 @@
         }
 
         .team-full-name {
-            font-size: 0.9rem;
+            font-size: 0.8rem; /* Reduced font size */
             opacity: 0.8;
             position: relative;
             z-index: 1;
@@ -292,12 +308,11 @@
     </style>
 </head>
 <body>
+    <div class="logo-container">
+        <img src="aditya-birla-logo copy.png" alt="Aditya Birla Logo" class="logo-img">
+        <img src="dit-logo.png" alt="DIT Logo" class="logo-img">
+    </div>
     <div class="container">
-        <div class="logo">
-            <div class="logo-text">UltraTech</div>
-            <div class="logo-subtext">CEMENT</div>
-        </div>
-        
         <h1>🧠 GENIUS BATTLE 🧠</h1>
         <p class="subtitle">Gen AI & Gen BI - Ultimate Quiz Challenge</p>
 
@@ -306,7 +321,7 @@
             <div class="round-info">
                 <div class="round-card">
                     <div class="round-title">🧠 Round 1</div>
-                    <div class="round-details">Fundamentals<br>15 Questions • 8 Minutes</div>
+                    <div class="round-details">Fundamentals<br>10 Questions • 8 Minutes</div>
                 </div>
                 <div class="round-card">
                     <div class="round-title">🎯 Round 2</div>
@@ -314,7 +329,7 @@
                 </div>
                 <div class="round-card">
                     <div class="round-title">✏️ Round 3</div>
-                    <div class="round-details">Prompt Engineering<br>2 Tasks • 3 Minutes</div>
+                    <div class="round-details">Prompt Engineering<br>2 Tasks • 6 Minutes</div>
                 </div>
             </div>
         </div>
@@ -323,49 +338,49 @@
             <h3>🏆 Team Quiz Access</h3>
             <div class="team-description">
                 <strong>Important:</strong> Each team link can only be used by one person at a time. 
-                Once opened, the link will be locked for other team members for 1 hour.
+                Once opened, the link will be locked for other team members
             </div>
             
             <div class="team-grid">
                 <a href="quiz.html?team=1" class="team-link">
-                    <div class="team-name">Team MB</div>
-                    <div class="team-full-name">Mind Benders</div>
+                    <div class="team-name">Team RAM</div>
+                    <div class="team-full-name">Rapid Action Minds</div>
                 </a>
                 <a href="quiz.html?team=2" class="team-link">
                     <div class="team-name">Team GB</div>
-                    <div class="team-full-name">Geek Battalion</div>
+                    <div class="team-full-name">Giggle Bytes</div>
                 </a>
                 <a href="quiz.html?team=3" class="team-link">
+                    <div class="team-name">Team WiFi</div>
+                    <div class="team-full-name">We're fun inside</div>
+                </a>
+                <a href="quiz.html?team=4" class="team-link">
+                    <div class="team-name">Team AI</div>
+                    <div class="team-full-name">Accelerated Innovators</div>
+                </a>
+                <a href="quiz.html?team=5" class="team-link">
+                    <div class="team-name">Team IP</div>
+                    <div class="team-full-name">Infinite Pings</div>
+                </a>
+                <a href="quiz.html?team=6" class="team-link">
+                    <div class="team-name">Team WAF</div>
+                    <div class="team-full-name">We are Fabulous</div>
+                </a>
+                <a href="quiz.html?team=7" class="team-link">
+                    <div class="team-name">Team TAG</div>
+                    <div class="team-full-name">Think, Act, Grow</div>
+                </a>
+                <a href="quiz.html?team=8" class="team-link">
+                    <div class="team-name">Team SSO</div>
+                    <div class="team-full-name">Smart Solutions only</div>
+                </a>
+                <a href="quiz.html?team=9" class="team-link">
                     <div class="team-name">Team TB</div>
                     <div class="team-full-name">Tech Brigade</div>
                 </a>
-                <a href="quiz.html?team=4" class="team-link">
-                    <div class="team-name">Team IP</div>
-                    <div class="team-full-name">Idea Pilots</div>
-                </a>
-                <a href="quiz.html?team=5" class="team-link">
-                    <div class="team-name">Team URL</div>
-                    <div class="team-full-name">Unique Result Leaders</div>
-                </a>
-                <a href="quiz.html?team=6" class="team-link">
-                    <div class="team-name">Team API</div>
-                    <div class="team-full-name">Access, Process, Innovate</div>
-                </a>
-                <a href="quiz.html?team=7" class="team-link">
-                    <div class="team-name">Team WAF</div>
-                    <div class="team-full-name">Wizards at Functionality</div>
-                </a>
-                <a href="quiz.html?team=8" class="team-link">
-                    <div class="team-name">Team PING</div>
-                    <div class="team-full-name">People in Next-Gen</div>
-                </a>
-                <a href="quiz.html?team=9" class="team-link">
-                    <div class="team-name">Team SSO</div>
-                    <div class="team-full-name">Smart Solution Only</div>
-                </a>
                 <a href="quiz.html?team=10" class="team-link">
-                    <div class="team-name">Team Cloud</div>
-                    <div class="team-full-name">Floating on Fun</div>
+                    <div class="team-name">Team MB</div>
+                    <div class="team-full-name">Mega Buddies</div>
                 </a>
             </div>
         </div>
