@@ -98,54 +98,45 @@
             color: #ecf0f1;
         }
 
-        .admin-section {
-            margin-bottom: 40px;
+        .quiz-info {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(52,152,219,0.15);
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
         }
 
-        .btn {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            border: none;
-            padding: 18px 35px;
-            border-radius: 25px;
-            color: white;
-            font-size: 1.1rem;
+        .quiz-info h4 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .round-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .round-card {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .round-title {
             font-weight: bold;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            text-decoration: none;
-            display: inline-block;
-            min-width: 200px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
+            color: #f1c40f;
+            margin-bottom: 8px;
         }
 
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
+        .round-details {
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        .btn.admin {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            font-size: 1.2rem;
-            padding: 20px 40px;
-        }
-
+        
         .team-section {
             margin-top: 40px;
             padding: 30px;
@@ -242,45 +233,6 @@
             z-index: 1;
         }
 
-        .quiz-info {
-            margin: 30px 0;
-            padding: 20px;
-            background: rgba(52,152,219,0.15);
-            border-radius: 15px;
-            border-left: 5px solid #3498db;
-        }
-
-        .quiz-info h4 {
-            color: #3498db;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .round-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .round-card {
-            background: rgba(255,255,255,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .round-title {
-            font-weight: bold;
-            color: #f1c40f;
-            margin-bottom: 8px;
-        }
-
-        .round-details {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
         .footer {
             margin-top: 40px;
             opacity: 0.8;
@@ -347,13 +299,7 @@
         </div>
         
         <h1>🧠 GENIUS BATTLE 🧠</h1>
-        <p class="subtitle">Gen AI vs Gen BI - Ultimate Quiz Challenge</p>
-        
-        <div class="admin-section">
-            <a href="admin.html" class="btn admin">
-                🏆 Admin Dashboard
-            </a>
-        </div>
+        <p class="subtitle">Gen AI & Gen BI - Ultimate Quiz Challenge</p>
 
         <div class="quiz-info">
             <h4>🎯 Quiz Structure</h4>
