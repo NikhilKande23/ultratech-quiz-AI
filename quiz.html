@@ -97,6 +97,12 @@
             font-size: 1.2rem;
             color: #2ecc71;
             font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .score-display.updated {
+            transform: scale(1.2);
+            color: #f1c40f;
         }
 
         .timer-display {
@@ -146,6 +152,31 @@
             border-left: 5px solid #f1c40f;
             transition: all 0.5s ease;
             animation: slideIn 0.5s ease;
+            opacity: 1;
+        }
+
+        /* Fade Animation Classes */
+        .question-card.fade-out {
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.3s ease;
+        }
+
+        .question-card.fade-in {
+            opacity: 1;
+            transform: translateX(0);
+            animation: fadeInSlide 0.3s ease;
+        }
+
+        @keyframes fadeInSlide {
+            from { 
+                opacity: 0; 
+                transform: translateX(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
         }
 
         @keyframes slideIn {
@@ -406,16 +437,16 @@
 
         // Team Data
         const teamData = {
-            1: {name: "Team MB", fullName: "Mind Benders"},
-            2: {name: "Team GB", fullName: "Geek Battalion"},
-            3: {name: "Team TB", fullName: "Tech Brigade"},
-            4: {name: "Team IP", fullName: "Idea Pilots"},
-            5: {name: "Team URL", fullName: "Unique Result Leaders"},
-            6: {name: "Team API", fullName: "Access, Process, Innovate"},
-            7: {name: "Team WAF", fullName: "Wizards at Functionality"},
-            8: {name: "Team PING", fullName: "People in Next-Gen"},
-            9: {name: "Team SSO", fullName: "Smart Solution Only"},
-            10: {name: "Team Cloud", fullName: "Floating on Fun"}
+            1: {name: "Team RAM", fullName: "Rapid Action Minds"},
+            2: {name: "Team GB", fullName: "Giggle Bytes"},
+            3: {name: "Team WiFi", fullName: "We're fun inside"},
+            4: {name: "Team AI", fullName: "Accelerated Innovators"},
+            5: {name: "Team IP", fullName: "Infinite Pings"},
+            6: {name: "Team WAF", fullName: "We are Fabulous"},
+            7: {name: "Team TAG", fullName: "Think, Act, Grow"},
+            8: {name: "Team SSO", fullName: "Smart Solutions only"},
+            9: {name: "Team TB", fullName: "Tech Brigade"},
+            10: {name: "Team MB", fullName: "Mega Buddies"}
         };
 
         // Game state
@@ -428,6 +459,7 @@
         let currentPromptTask = 0;
         let roundActive = false;
         let db = null;
+        let gameStateListener = null;
 
         // Question Banks
         const round1Questions = [
@@ -696,7 +728,7 @@
                     }
                 }
                 
-                // Lock the session
+                // Lock the session and initialize/restore state
                 const team = teamData[teamId];
                 await db.collection('teams').doc(teamId).set({
                     name: team.name,
@@ -711,11 +743,18 @@
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 
+                // Load existing state if any
+                await loadCurrentState();
+                
                 // Start listening for game state
                 listenForGameState();
                 
-                // Show first question immediately
-                displayFirstQuestion();
+                // Show first question or restored state
+                if (currentRound === 0) {
+                    displayFirstQuestion();
+                } else {
+                    updateGameDisplay();
+                }
                 
             } catch (error) {
                 console.error('Error initializing team:', error);
@@ -724,17 +763,71 @@
             }
         }
 
+        async function loadCurrentState() {
+            try {
+                const teamDoc = await db.collection('teams').doc(teamId).get();
+                if (teamDoc.exists) {
+                    const teamData = teamDoc.data();
+                    const savedState = teamData.currentState;
+                    
+                    if (savedState) {
+                        currentRound = savedState.currentRound || 0;
+                        currentQuestionIndex = savedState.currentQuestionIndex || 0;
+                        currentScore = savedState.currentScore || 0;
+                        currentPromptTask = savedState.currentPromptTask || 0;
+                        
+                        console.log('Restored state:', savedState);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading current state:', error);
+            }
+        }
+
+        async function saveCurrentState() {
+            if (!db || !teamId) return;
+            
+            try {
+                const stateToSave = {
+                    currentRound,
+                    currentQuestionIndex,
+                    currentScore,
+                    currentPromptTask,
+                    lastSaved: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                await db.collection('teams').doc(teamId).update({
+                    currentState: stateToSave,
+                    [`rounds.round${currentRound}.liveScore`]: currentScore,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                console.log('State saved:', stateToSave);
+                
+            } catch (error) {
+                console.error('Error saving current state:', error);
+            }
+        }
+
         function listenForGameState() {
             if (!db) return;
             
-            db.collection('gameState').doc('current').onSnapshot((doc) => {
+            gameStateListener = db.collection('gameState').doc('current').onSnapshot((doc) => {
                 if (doc.exists) {
                     const gameData = doc.data();
                     const newRound = gameData.currentRound || 0;
                     
                     if (newRound !== currentRound) {
+                        // Check if we need to sync timer
+                        if (newRound >= 1 && newRound <= 3 && gameData.roundEndTime) {
+                            syncTimerWithServer(gameData);
+                        }
+                        
                         currentRound = newRound;
                         updateGameDisplay();
+                    } else if (newRound >= 1 && newRound <= 3 && gameData.roundEndTime && !roundActive) {
+                        // Sync timer even if round hasn't changed
+                        syncTimerWithServer(gameData);
                     }
                 }
             }, (error) => {
@@ -743,22 +836,42 @@
             });
         }
 
+        function syncTimerWithServer(gameData) {
+            if (!gameData.roundEndTime) return;
+            
+            const now = new Date();
+            const endTime = gameData.roundEndTime.toDate();
+            const serverTimeLeft = Math.floor((endTime - now) / 1000);
+            
+            if (serverTimeLeft > 0) {
+                timeLeft = serverTimeLeft;
+                if (!roundActive) {
+                    roundActive = true;
+                    startTimer();
+                }
+                console.log(`Timer synced with server: ${timeLeft} seconds remaining`);
+            } else {
+                console.log('Server timer has expired');
+                handleTimeUp();
+            }
+        }
+
         function displayFirstQuestion() {
             // Show Round 1 Question 1 but keep currentRound = 0 until admin starts
             currentQuestionIndex = 0;
             currentScore = 0;
             roundActive = false;
-            // DON'T set currentRound = 1 here - keep it 0 until admin starts
             displayRound1Question();
         }
 
         function updateGameDisplay() {
             if (currentRound === 0) {
-                displayFirstQuestion(); // Still show first question
+                displayFirstQuestion();
             } else if (currentRound === 1) {
                 if (!roundActive) {
                     startRound1Timer();
                 }
+                displayRound1Question();
             } else if (currentRound === 2) {
                 if (!roundActive) {
                     startRound2();
@@ -768,16 +881,16 @@
                     startRound3();
                 }
             } else if (currentRound >= 11 && currentRound <= 13) {
-                // Round ended
                 handleRoundEnd();
             }
         }
 
         function startRound1Timer() {
             roundActive = true;
-            timeLeft = 8 * 60; // 8 minutes
+            if (timeLeft <= 0) {
+                timeLeft = 8 * 60; // Default 8 minutes if not synced
+            }
             startTimer();
-            // Re-display the question without waiting message
             displayRound1Question();
         }
 
@@ -785,7 +898,9 @@
             roundActive = true;
             currentQuestionIndex = 0;
             currentScore = 0;
-            timeLeft = 12 * 60; // 12 minutes
+            if (timeLeft <= 0) {
+                timeLeft = 12 * 60; // Default 12 minutes if not synced
+            }
             startTimer();
             displayRound2Question();
         }
@@ -793,7 +908,9 @@
         function startRound3() {
             roundActive = true;
             currentPromptTask = 0;
-            timeLeft = 3 * 60; // 3 minutes
+            if (timeLeft <= 0) {
+                timeLeft = 3 * 60; // Default 3 minutes if not synced
+            }
             startTimer();
             displayPromptTask();
         }
@@ -807,7 +924,6 @@
             const question = round1Questions[currentQuestionIndex];
             const container = document.getElementById('quizContainer');
             
-            // Simple check: if round is not active, show waiting state
             const isWaiting = (currentRound === 0 || !roundActive);
             
             const optionsHTML = question.options.map((option, index) => 
@@ -833,7 +949,7 @@
                         ${isWaiting ? 'Waiting...' : formatTime(timeLeft)}
                     </div>
                 </div>
-                <div class="question-card">
+                <div class="question-card fade-in">
                     <div class="question-difficulty difficulty-${question.difficulty}">
                         ${question.difficulty.toUpperCase()} - ${question.points} points
                     </div>
@@ -844,13 +960,10 @@
                 </div>
             `;
             
-            // Update timer display if active
             if (!isWaiting) {
                 updateTimerDisplay();
             }
         }
-
-
 
         function displayRound2Question() {
             if (currentQuestionIndex >= round2Questions.length) {
@@ -874,7 +987,7 @@
                     </div>
                     <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
                 </div>
-                <div class="question-card">
+                <div class="question-card fade-in">
                     <div class="question-difficulty difficulty-${question.difficulty}">
                         SCENARIO - ${question.points} points
                     </div>
@@ -906,7 +1019,7 @@
                     </div>
                     <div class="timer-display" id="timerDisplay">${formatTime(timeLeft)}</div>
                 </div>
-                <div class="question-card">
+                <div class="question-card fade-in">
                     <div class="question-difficulty" style="background: #9b59b6;">
                         PROMPT TASK
                     </div>
@@ -936,6 +1049,7 @@
             const questions = round === 1 ? round1Questions : round2Questions;
             const question = questions[currentQuestionIndex];
             const options = document.querySelectorAll('.option-btn');
+            const questionCard = document.querySelector('.question-card');
             
             // Disable all options immediately
             options.forEach(btn => {
@@ -957,18 +1071,23 @@
             // Save state after answering
             saveCurrentState();
             
-            // Auto-advance after 2 seconds - make sure this always works
+            // Fade out and advance after 500ms
             setTimeout(() => {
-                currentQuestionIndex++;
-                saveCurrentState(); // Save updated question index
+                // Add fade out effect
+                questionCard.classList.add('fade-out');
                 
-                // Force advance to next question
-                if (round === 1) {
-                    displayRound1Question();
-                } else if (round === 2) {
-                    displayRound2Question();
-                }
-            }, 2000);
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    saveCurrentState(); // Save updated question index
+                    
+                    // Display next question with fade in
+                    if (round === 1) {
+                        displayRound1Question();
+                    } else if (round === 2) {
+                        displayRound2Question();
+                    }
+                }, 300); // Fade out duration
+            }, 500); // Answer feedback duration
         }
 
         async function submitPrompt() {
@@ -999,7 +1118,15 @@
 
                 currentPromptTask++;
                 saveCurrentState(); // Save updated task index
-                displayPromptTask();
+                
+                // Fade transition
+                const questionCard = document.querySelector('.question-card');
+                questionCard.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    displayPromptTask();
+                }, 300);
+                
             } catch (error) {
                 console.error('Error submitting prompt:', error);
                 alert('Error submitting prompt. Please try again.');
@@ -1132,6 +1259,10 @@
             const scoreDisplay = document.querySelector('.score-display');
             if (scoreDisplay) {
                 scoreDisplay.textContent = `Score: ${currentScore} points`;
+                scoreDisplay.classList.add('updated');
+                setTimeout(() => {
+                    scoreDisplay.classList.remove('updated');
+                }, 300);
             }
         }
 
@@ -1193,9 +1324,12 @@
             if (db && teamId) {
                 try {
                     // Unsubscribe from listeners
-                    if (window.gameStateUnsubscribe) {
-                        window.gameStateUnsubscribe();
+                    if (gameStateListener) {
+                        gameStateListener();
                     }
+                    
+                    // Save current state before unlocking
+                    await saveCurrentState();
                     
                     // Unlock session
                     await db.collection('teams').doc(teamId).update({
